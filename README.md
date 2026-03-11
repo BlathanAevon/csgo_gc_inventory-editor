@@ -1,5 +1,8 @@
 # csgo_gc_inventory-editor
 
+**CSGO-GC-INVENTORY-EDITOR** is a **graphical inventory editor** for [Mikko’s `csgo_gc`](https://github.com/mikkokko/csgo_gc).
+
+
 ## A lightweight visual inventory editor for csgo_gc.
 
 ### This tool provides a graphical interface for editing the inventory.txt used by csgo_gc, allowing you to quickly add skins, modify items, and manage loadouts without manually editing files.

@@ -1,7 +1,3 @@
-Here is a more serious, clean, and professional version without emojis:
-
----
-
 # csgo_gc_inventory-editor
 
 **csgo_gc_inventory-editor** is a graphical inventory editor for [Mikko’s `csgo_gc`](https://github.com/mikkokko/csgo_gc).

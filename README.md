@@ -22,7 +22,20 @@ It allows users to manage their inventory without manually editing text files, m
 
 ---
 
-## Screenshots
+## Screenshots (new)
+
+<img width="1919" height="1037" alt="image" src="https://github.com/user-attachments/assets/4e828bde-5b48-4f3b-a5d3-1be15d2b0a25" />
+
+<img width="354" height="418" alt="image" src="https://github.com/user-attachments/assets/32001dd0-576e-4ec4-8ce0-8fe8b8099e70" />
+
+<img width="970" height="800" alt="image" src="https://github.com/user-attachments/assets/b595846a-42de-4fcf-9bb9-06c63edc5b6e" />
+
+<img width="1921" height="1039" alt="image" src="https://github.com/user-attachments/assets/aa0362e1-dae1-45c7-a36d-6a6cdca6500d" />
+
+<img width="961" height="367" alt="image" src="https://github.com/user-attachments/assets/29197bfb-6cfe-413f-b04b-7cf4d81acb09" />
+
+
+## Screenshots (old)
 
 <img width="1921" height="1038" alt="image" src="https://github.com/user-attachments/assets/df13335b-a6d3-4506-915e-c6a213b9b9f0" />
 

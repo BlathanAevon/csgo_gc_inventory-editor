@@ -146,7 +146,7 @@ const knifeDefIndexes = [
   { id: "519", name: "Ursus Knife" },
   { id: "520", name: "Navaja Knife" },
   { id: "521", name: "Nomad Knife" },
-  { id: "59", name: "Stiletto Knife" },
+  { id: "522", name: "Stiletto Knife" },
   { id: "523", name: "Talon Knife" },
   { id: "525", name: "Skeleton Knife" },
   { id: "526", name: "Kukri Knife" }

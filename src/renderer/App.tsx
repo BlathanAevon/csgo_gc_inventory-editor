@@ -128,18 +128,28 @@ const weaponDefIndexes = [
 ];
 
 const knifeDefIndexes = [
+  { id: "42", name: "Knife" },
+  { id: "59", name: "Knife" },
   { id: "500", name: "Bayonet" },
+  { id: "503", name: "Classic Knife" },
   { id: "505", name: "Flip Knife" },
   { id: "506", name: "Gut Knife" },
   { id: "507", name: "Karambit" },
   { id: "508", name: "M9 Bayonet" },
   { id: "509", name: "Huntsman Knife" },
   { id: "512", name: "Falchion Knife" },
+  { id: "514", name: "Bowie Knife" },
   { id: "515", name: "Butterfly Knife" },
   { id: "516", name: "Shadow Daggers" },
+  { id: "517", name: "Paracord Knife" },
+  { id: "518", name: "Survival Knife" },
+  { id: "519", name: "Ursus Knife" },
   { id: "520", name: "Navaja Knife" },
+  { id: "521", name: "Nomad Knife" },
+  { id: "59", name: "Stiletto Knife" },
   { id: "523", name: "Talon Knife" },
-  { id: "525", name: "Skeleton Knife" }
+  { id: "525", name: "Skeleton Knife" },
+  { id: "526", name: "Kukri Knife" }
 ];
 
 const musickitDefIndex = [

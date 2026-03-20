@@ -33,6 +33,12 @@ const normalizeToStringMap = (obj: KvObject): Record<string, string> => {
   return result;
 };
 
+const normalizeScalar = (value: KvObject[keyof KvObject] | undefined, fallback: string) => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return fallback;
+};
+
 export const parseInventory = (text: string): InventoryDoc => {
   const parsed = parseKeyValues(text);
   let rootKey: string | null = null;
@@ -64,14 +70,14 @@ export const parseInventory = (text: string): InventoryDoc => {
 
       return {
         id: key,
-        inventory: String(entry.inventory ?? "0"),
-        def_index: String(entry.def_index ?? "0"),
-        level: String(entry.level ?? "1"),
-        quality: String(entry.quality ?? "0"),
-        flags: String(entry.flags ?? "0"),
-        origin: String(entry.origin ?? "8"),
-        in_use: String(entry.in_use ?? "0"),
-        rarity: String(entry.rarity ?? "0"),
+        inventory: normalizeScalar(entry.inventory, "0"),
+        def_index: normalizeScalar(entry.def_index, "0"),
+        level: normalizeScalar(entry.level, "1"),
+        quality: normalizeScalar(entry.quality, "0"),
+        flags: normalizeScalar(entry.flags, "0"),
+        origin: normalizeScalar(entry.origin, "8"),
+        in_use: normalizeScalar(entry.in_use, "0"),
+        rarity: normalizeScalar(entry.rarity, "0"),
         attributes,
         equipped_state
       } satisfies InventoryItem;
@@ -83,15 +89,19 @@ export const parseInventory = (text: string): InventoryDoc => {
 
 const buildItemObject = (item: InventoryItem): KvObject => {
   const result: KvObject = {
-    inventory: item.inventory,
-    def_index: item.def_index,
-    level: item.level,
-    quality: item.quality,
-    flags: item.flags,
-    origin: item.origin,
-    in_use: item.in_use,
-    rarity: item.rarity
+    inventory: normalizeScalar(item.inventory, "0"),
+    def_index: normalizeScalar(item.def_index, "0"),
+    level: normalizeScalar(item.level, "1"),
+    quality: normalizeScalar(item.quality, "0"),
+    flags: normalizeScalar(item.flags, "0"),
+    origin: normalizeScalar(item.origin, "8"),
+    in_use: normalizeScalar(item.in_use, "0"),
+    rarity: normalizeScalar(item.rarity, "0")
   };
+
+  if (typeof result.def_index !== "string") {
+    result.def_index = "0";
+  }
 
   const attributeEntries = Object.entries(item.attributes).filter(([, value]) => value.trim().length > 0);
   if (attributeEntries.length > 0) {

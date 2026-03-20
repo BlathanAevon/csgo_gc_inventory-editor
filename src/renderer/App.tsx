@@ -301,6 +301,13 @@ type LibrarySelectionEntry =
   | { kind: "music"; item: MusicKitItem }
   | { kind: "collectible"; item: CollectibleItem };
 
+type Contributor = {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  contributions: number;
+};
+
 const cs2SkinNames = new Set(
   [
     "AK-47 Inheritance",
@@ -623,6 +630,11 @@ const normalizeSkinName = (name?: string) => {
     .toLowerCase();
 };
 
+const isKnifeSkinName = (name?: string) => {
+  const normalized = normalizeSkinName(name);
+  return Boolean(normalized) && normalized.includes("knife") && !normalized.includes("glove");
+};
+
 const getSkinDisplayName = (name?: string) => {
   if (!name) return "";
   return name
@@ -644,6 +656,9 @@ const isCs2SkinName = (name?: string) => {
 
 // XD just filter kukri out for "cs2 mode"
 const isKukriSkinName = (name?: string) =>
+  name ? normalizeSkinName(name).includes("kukri knife") : false;
+
+const isKukriWeaponName = (name?: string) =>
   name ? normalizeSkinName(name).includes("kukri knife") : false;
 
 const cs2CaseNames = new Set(
@@ -786,6 +801,9 @@ const KNIFE_GLOVE_RARITY_ID = "6";
 
 const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   if (knifeDefIndexSet.has(defIndex)) {
+    if (defIndex === "42" || defIndex === "59") {
+      return;
+    }
     item.quality = KNIFE_GLOVE_QUALITY_ID;
     item.rarity = KNIFE_GLOVE_RARITY_ID;
     return;
@@ -831,6 +849,12 @@ const getWearRangeFromName = (wearName?: string) => {
 const normalizePaintIndex = (value?: string) => {
   if (!value) return "";
   return value.replace(/\.0+$/, "");
+};
+
+const normalizeDefIndex = (value: unknown, fallback: string) => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return fallback;
 };
 
 const getWearNameFromSkin = (skin: SkinItem) => {
@@ -1169,7 +1193,7 @@ const App = () => {
   const [inventoryRarity, setInventoryRarity] = useState("Any");
   const [inventoryQuality, setInventoryQuality] = useState("Any");
   const [inventoryEquipped, setInventoryEquipped] = useState<InventoryEquippedFilter>("all");
-  const [activePage, setActivePage] = useState<"inventory" | "library">("inventory");
+  const [activePage, setActivePage] = useState<"inventory" | "library" | "credits">("inventory");
   const [libraryTab, setLibraryTab] = useState<LibraryType>("vanilla");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "popular">("all");
   const [librarySearch, setLibrarySearch] = useState("");
@@ -1194,6 +1218,9 @@ const App = () => {
   >(null);
   const [attributesOpen, setAttributesOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
+  const [credits, setCredits] = useState<Contributor[]>([]);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+  const [creditsError, setCreditsError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -1248,6 +1275,15 @@ const App = () => {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
+    };
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
   useEffect(() => {
@@ -1365,6 +1401,45 @@ const App = () => {
       setLibrarySelection({});
     }
   }, [libraryMultiSelect]);
+
+  useEffect(() => {
+    if (activePage !== "credits") return;
+    let mounted = true;
+    setCreditsLoading(true);
+    setCreditsError(null);
+    fetch("https://api.github.com/repos/dricotec/csgo_gc_inventory-editor/contributors")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!mounted) return;
+        if (!Array.isArray(data)) {
+          setCreditsError("Failed to load contributors.");
+          setCredits([]);
+          return;
+        }
+        const mapped = data
+          .map((entry) => ({
+            login: entry.login,
+            avatar_url: entry.avatar_url,
+            html_url: entry.html_url,
+            contributions: entry.contributions ?? 0
+          }))
+          .filter((entry) => Boolean(entry.login && entry.avatar_url));
+        const main = mapped.find((entry) => entry.login.toLowerCase() === "dricotec");
+        const others = mapped.filter((entry) => entry.login.toLowerCase() !== "dricotec");
+        setCredits(main ? [main, ...others] : others);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setCreditsError("Failed to load contributors.");
+        setCredits([]);
+      })
+      .finally(() => {
+        if (mounted) setCreditsLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [activePage]);
 
   const agentsIndex = useMemo(() => {
     const map = new Map<string, AgentItem>();
@@ -1744,7 +1819,7 @@ const App = () => {
         newItem.quality = DEFAULT_QUALITY_ID;
       } else if (entry.kind === "case" || entry.kind === "key" || entry.kind === "vanilla") {
         newItem = getDefaultItem(String(nextId++));
-        newItem.def_index = entry.item.def_index ?? newItem.def_index;
+        newItem.def_index = normalizeDefIndex(entry.item.def_index, newItem.def_index);
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
         newItem.quality = DEFAULT_QUALITY_ID;
@@ -2018,7 +2093,7 @@ const App = () => {
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = agent.def_index;
+    newItem.def_index = normalizeDefIndex(agent.def_index, newItem.def_index);
     const rarityId = getRarityIdFromName(agent.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;
@@ -2035,7 +2110,7 @@ const App = () => {
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = container.def_index ?? newItem.def_index;
+    newItem.def_index = normalizeDefIndex(container.def_index, newItem.def_index);
     const rarityId = getRarityIdFromName(container.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;
@@ -2053,7 +2128,7 @@ const App = () => {
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = collectible.def_index ?? newItem.def_index;
+    newItem.def_index = normalizeDefIndex(collectible.def_index, newItem.def_index);
     const rarityId = getRarityIdFromName(collectible.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;
@@ -2121,6 +2196,15 @@ const App = () => {
     const showAll = libraryTab === "all";
     const vanillaEntries = baseWeapons.filter((weapon) => {
       if (!(showAll || libraryTab === "vanilla")) return false;
+      if (!cs2Mode && isKukriWeaponName(weapon.name)) return false;
+      return matchesSearch(`${weapon.name ?? ""} ${weapon.def_index ?? ""}`);
+    });
+    const vanillaKnifeEntries = baseWeapons.filter((weapon) => {
+      if (!(showAll || libraryTab === "knives")) return false;
+      if (!cs2Mode && isKukriWeaponName(weapon.name)) return false;
+      const defIndex = weapon.def_index ? String(weapon.def_index) : "";
+      if (!knifeDefIndexSet.has(defIndex)) return false;
+      if (defIndex === "42" || defIndex === "59") return false;
       return matchesSearch(`${weapon.name ?? ""} ${weapon.def_index ?? ""}`);
     });
     const skinEntries = librarySkins.filter((skin) => {
@@ -2132,7 +2216,7 @@ const App = () => {
       if (!matchesQuality(skin)) return false;
       if (!matchesWeapon(skin)) return false;
       const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : "";
-      if (libraryTab === "knives" && !knifeDefIndexSet.has(weaponId)) return false;
+      if (libraryTab === "knives" && !knifeDefIndexSet.has(weaponId) && !isKnifeSkinName(skin.name)) return false;
       if (libraryTab === "gloves" && !gloveDefIndexSet.has(weaponId)) return false;
       const displayName = getSkinDisplayName(skin.name);
       return matchesSearch(`${displayName} ${skin.name} ${skin.paint_index}`);
@@ -2184,6 +2268,7 @@ const App = () => {
 
     return {
       vanillaEntries,
+      vanillaKnifeEntries,
       skinEntries,
       stickerEntries,
       agentEntries,
@@ -2211,6 +2296,7 @@ const App = () => {
 
   const {
     vanillaEntries,
+    vanillaKnifeEntries,
     skinEntries,
     stickerEntries,
     agentEntries,
@@ -2255,6 +2341,12 @@ const App = () => {
             onClick={() => setActivePage("library")}
           >
             Library
+          </button>
+          <button
+            className={`sidebar__link ${activePage === "credits" ? "is-active" : ""}`}
+            onClick={() => setActivePage("credits")}
+          >
+            Credits
           </button>
           <div className="sidebar__footer">made by drico</div>
         </aside>
@@ -2612,6 +2704,48 @@ const App = () => {
                 </div>
               </div>
               <div className="library-grid">
+                {vanillaKnifeEntries.map((weapon) => {
+                  const selectionKey = `vanilla:${weapon.id}`;
+                  const isSelected = Boolean(librarySelection[selectionKey]);
+                  const handleSelect = () =>
+                    toggleLibrarySelection(selectionKey, { kind: "vanilla", item: weapon });
+                  const knifeRarityColor = getRarityColor({ name: "Covert" });
+                  return (
+                    <div
+                      key={`knife-${weapon.id}`}
+                      className={`library-card item-tile ${isSelected ? "is-selected" : ""}`}
+                    >
+                      <button
+                        className="library-card__add"
+                        type="button"
+                        onClick={() =>
+                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                        }
+                      >
+                        +
+                      </button>
+                      <div
+                        className="library-card__thumb item-tile__bg is-clickable"
+                        onClick={() =>
+                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                        }
+                      >
+                        <CachedImage
+                          src={weapon.image}
+                          alt={weapon.name ?? "Weapon"}
+                          className="item-tile__image"
+                        />
+                      </div>
+                      <div className="rarity-bar" style={{ backgroundColor: knifeRarityColor }} />
+                      <div className="library-card__meta">
+                        <strong className="item-tile__name">{weapon.name ?? "Weapon"}</strong>
+                        {weapon.def_index && (
+                          <span className="item-tile__meta">def_index {weapon.def_index}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {vanillaEntries.map((weapon) => {
                   const selectionKey = `vanilla:${weapon.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
@@ -2658,6 +2792,11 @@ const App = () => {
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
                     toggleLibrarySelection(selectionKey, { kind: "skin", item: skin });
+                  const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : "";
+                  const isKnifeEntry = knifeDefIndexSet.has(weaponId) || isKnifeSkinName(skin.name);
+                  const rarityColor = isKnifeEntry
+                    ? getRarityColor({ name: "Covert" })
+                    : getRarityColor(skin.rarity);
                   return (
                     <div
                       key={skin.id}
@@ -2686,7 +2825,7 @@ const App = () => {
                       </div>
                       <div
                         className="rarity-bar"
-                        style={{ backgroundColor: getRarityColor(skin.rarity) }}
+                        style={{ backgroundColor: rarityColor }}
                       />
                       <div className="library-card__meta">
                         <strong className="item-tile__name">
@@ -2956,6 +3095,71 @@ const App = () => {
                     </div>
                   );
                 })}
+              </div>
+            </section>
+          )}
+          {activePage === "credits" && (
+            <section className="panel panel--credits transition-all duration-200 inv-category Active">
+              <div className="panel__header content-navbar">
+                <h2>Credits</h2>
+                <span className="hint">Open-source contributors</span>
+              </div>
+              <div className="credits-panel">
+                {creditsLoading && <div className="hint">Loading contributors…</div>}
+                {creditsError && <div className="hint">{creditsError}</div>}
+                {!creditsLoading && !creditsError && credits.length === 0 && (
+                  <div className="hint">No contributors found.</div>
+                )}
+                {!creditsLoading && credits.length > 0 && (
+                  <>
+                    {credits[0]?.login?.toLowerCase() === "dricotec" && (
+                      <div className="credits-section">
+                        <div className="credits-section__title">Main Developer</div>
+                        <div className="credits-grid">
+                          {credits
+                            .filter((entry) => entry.login.toLowerCase() === "dricotec")
+                            .map((entry) => (
+                              <a
+                                key={entry.login}
+                                className="credits-card"
+                                href={entry.html_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <img src={entry.avatar_url} alt={entry.login} />
+                                <div>
+                                  <strong>{entry.login}</strong>
+                                  <span>Main Developer</span>
+                                </div>
+                              </a>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="credits-section">
+                      <div className="credits-section__title">Contributors</div>
+                      <div className="credits-grid">
+                        {credits
+                          .filter((entry) => entry.login.toLowerCase() !== "dricotec")
+                          .map((entry) => (
+                            <a
+                              key={entry.login}
+                              className="credits-card"
+                              href={entry.html_url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <img src={entry.avatar_url} alt={entry.login} />
+                              <div>
+                                <strong>{entry.login}</strong>
+                                <span>{entry.contributions} contributions</span>
+                              </div>
+                            </a>
+                          ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
           )}

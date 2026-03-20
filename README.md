@@ -65,3 +65,4 @@ To contribute:
 2. Create a new branch for your changes
 3. Commit your changes with clear messages
 4. Open a pull request for review
+5. You will show up in the Credits tab on the Inventory Editor for contributing.

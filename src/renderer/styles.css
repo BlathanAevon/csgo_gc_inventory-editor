@@ -350,8 +350,7 @@ body {
 
 .credits-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(188px, 0fr));
 }
 
 .credits-card {
@@ -799,9 +798,7 @@ body {
 
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
-  gap: 16px;
-  padding: 20px 32px;
+  grid-template-columns: repeat(auto-fit, minmax(188px, 0fr));
 }
 
 .inventory-grid {
@@ -1162,8 +1159,7 @@ select {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(188px, 0fr));
 }
 
 .form-grid--secondary {

@@ -29,7 +29,6 @@ import {
   Contributor,
 } from "./types";
 
-const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
@@ -979,10 +978,7 @@ const App = () => {
       const agent = agentsIndex.get(item.def_index) ?? null;
       const wear = getWearValue(item.attributes["8"]);
       const skinMatch = findSkinMatch(item, skinsByPaintIndex, wear);
-      const sticker =
-        item.def_index === STICKER_DEF_INDEX
-          ? (stickersByIndex.get(item.attributes["113"]?.trim() ?? "") ?? null)
-          : null;
+      const sticker = stickerIndex.get(item.def_index) ?? null;
       const musicKit = getMusicKitForItem(item);
       const collectible = collectiblesByDefIndex.get(item.def_index) ?? null;
       const name = getDisplayName(
@@ -1194,7 +1190,10 @@ const App = () => {
         applyKnifeGloveDefaults(newItem, weaponId);
       } else if (entry.kind === "sticker") {
         newItem = getDefaultItem(String(nextId++));
-        newItem.def_index = STICKER_DEF_INDEX;
+        newItem.def_index = normalizeDefIndex(
+          entry.item.def_index,
+          newItem.def_index,
+        );
         newItem.attributes["113"] = entry.item.sticker_index;
         newItem.rarity = DEFAULT_RARITY_ID;
         newItem.quality = DEFAULT_QUALITY_ID;
@@ -1291,7 +1290,6 @@ const App = () => {
 
   const toggleSticker = (enabled: boolean) => {
     if (!selectedItem) return;
-    if (selectedItem.def_index !== STICKER_DEF_INDEX) return;
     const attributes = { ...selectedItem.attributes };
     if (enabled) {
       attributes["113"] = attributes["113"] ?? "0";
@@ -1502,23 +1500,11 @@ const App = () => {
   };
 
   const applyStickerFromLibrary = (sticker: StickerItem) => {
-    if (selectedItem && selectedItem.def_index === STICKER_DEF_INDEX) {
-      if (sticker.sticker_index) {
-        updateAttribute("113", sticker.sticker_index);
-        setStatus(`Updated sticker item ${selectedItem.id} to ${sticker.name}.`);
-      }
-      return;
-    }
-    if (!sticker.sticker_index) {
-      updateAttribute("113", sticker.sticker_index);
-      // setStatus(`Error: Sticker ${sticker.name} has no sticker_index.`);
-      // return;
-    }
     const nextId = String(
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = STICKER_DEF_INDEX;
+    newItem.def_index = sticker.id;
     newItem.attributes["113"] = sticker.sticker_index;
     newItem.rarity = DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;

@@ -352,11 +352,11 @@ const getWearColor = (value: number) => {
   return "#e16767";
 };
 
-// const getLiveImageSrc = (src: string | undefined, nonce: number) => {
-//   if (!src) return undefined;
-//   const joiner = src.includes("?") ? "&" : "?";
-//   return `${src}${joiner}t=${nonce}`;
-// };
+const getLiveImageSrc = (src: string | undefined, nonce: number) => {
+  if (!src) return undefined;
+  const joiner = src.includes("?") ? "&" : "?";
+  return `${src}${joiner}t=${nonce}`;
+};
 
 // const imageCache = new Map<string, string>();
 // const imagePromiseCache = new Map<string, Promise<string>>();

@@ -399,6 +399,7 @@ const getPreviewImage = (
   baseIndex: Map<string, ApiItem>,
   crateIndex: Map<string, ApiItem>,
   keyIndex: Map<string, ApiItem>,
+  stickerIndex: Map<string, StickerItem>,
   skinMatch?: SkinItem | null,
   agent?: AgentItem | null,
 ) => {
@@ -412,6 +413,9 @@ const getPreviewImage = (
 
   const keyItem = keyIndex.get(item.def_index);
   if (keyItem?.image) return keyItem.image;
+
+  const stickerItem = stickerIndex.get(item.def_index);
+  if (stickerItem?.image) return stickerItem.image;
 
   if (preview?.image) return preview.image;
 
@@ -1319,6 +1323,7 @@ const App = () => {
         baseWeaponIndex,
         crateIndex,
         keyIndex,
+        stickerIndex,
         skinMatchWithImage,
         selectedAgent,
       )

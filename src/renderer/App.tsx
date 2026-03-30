@@ -33,7 +33,6 @@ const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
-const INVENTORY_PAGE_SIZE = 15;
 
 type FilterId = (typeof options.filter)[number]["id"];
 type InventoryEquippedFilter = (typeof options.inventoryEquipped)[number]["id"];
@@ -50,9 +49,13 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...def_index.weapons, ...def_index.knives, ...def_index.gloves, ...def_index.crates, ...def_index.keys].map(
-    (item) => [item.id, item.name],
-  ),
+  [
+    ...def_index.weapons,
+    ...def_index.knives,
+    ...def_index.gloves,
+    ...def_index.crates,
+    ...def_index.keys,
+  ].map((item) => [item.id, item.name]),
 );
 
 const agentItems = agents as AgentItem[];
@@ -393,6 +396,7 @@ const getPreviewImage = (
   baseIndex: Map<string, ApiItem>,
   crateIndex: Map<string, ApiItem>,
   keyIndex: Map<string, ApiItem>,
+  stickerIndex: Map<string, StickerItem>,
   skinMatch?: SkinItem | null,
   agent?: AgentItem | null,
 ) => {
@@ -406,6 +410,9 @@ const getPreviewImage = (
 
   const keyItem = keyIndex.get(item.def_index);
   if (keyItem?.image) return keyItem.image;
+
+  const stickerItem = keyIndex.get(item.def_index);
+  if (stickerItem?.image) return stickerItem.image;
 
   if (preview?.image) return preview.image;
 
@@ -509,7 +516,6 @@ const App = () => {
     total: number;
     current: number;
   } | null>(null);
-  // const [inventoryPage, setInventoryPage] = useState(1);
   const [wearPickerOpen, setWearPickerOpen] = useState(false);
   const [wearPickerOptions, setWearPickerOptions] = useState<SkinItem[]>([]);
   const [wearPickerSkin, setWearPickerSkin] = useState<SkinItem | null>(null);
@@ -800,6 +806,15 @@ const App = () => {
     });
     return map;
   }, [keyItems]);
+
+  const stickerIndex = useMemo(() => {
+    const map = new Map<string, StickerItem>();
+    keyItems.forEach((item) => {
+      if (!item.def_index) return;
+      map.set(String(item.def_index), item);
+    });
+    return map;
+  }, [stickerItems]);
 
   const collectiblesByDefIndex = useMemo(() => {
     const map = new Map<string, CollectibleItem>();
@@ -1306,6 +1321,7 @@ const App = () => {
         baseWeaponIndex,
         crateIndex,
         keyIndex,
+        stickerIndex,
         skinMatchWithImage,
         selectedAgent,
       )
@@ -1942,6 +1958,7 @@ const App = () => {
                         baseWeaponIndex,
                         crateIndex,
                         keyIndex,
+                        stickerIndex,
                         match,
                         agent,
                       );
@@ -2004,33 +2021,6 @@ const App = () => {
                       );
                     })}
                   </div>
-                  {/* <div className="inventory-pagination">
-                    <button
-                      className="btn btn--ghost"
-                      type="button"
-                      disabled={inventoryPage <= 1}
-                      onClick={() =>
-                        setInventoryPage((page) => Math.max(1, page - 1))
-                      }
-                    >
-                      ← Prev
-                    </button>
-                    <span className="pagination__meta">
-                      Page {inventoryPage} of {totalInventoryPages}
-                    </span>
-                    <button
-                      className="btn btn--ghost"
-                      type="button"
-                      disabled={inventoryPage >= totalInventoryPages}
-                      onClick={() =>
-                        setInventoryPage((page) =>
-                          Math.min(totalInventoryPages, page + 1),
-                        )
-                      }
-                    >
-                      Next →
-                    </button>
-                  </div> */}
                 </section>
               </div>
             </div>

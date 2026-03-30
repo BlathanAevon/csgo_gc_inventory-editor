@@ -27,6 +27,7 @@ export type StickerItem = {
   name: string;
   sticker_index: string;
   image?: string;
+  rarity?: { name?: string; color?: string };
 };
 
 export type AgentItem = {

@@ -599,7 +599,6 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    if (activePage !== "library") return;
     if (
       skinsLoaded &&
       knifeSkinsLoaded &&
@@ -1197,7 +1196,7 @@ const App = () => {
         newItem = getDefaultItem(String(nextId++));
         newItem.def_index = STICKER_DEF_INDEX;
         newItem.attributes["113"] = entry.item.sticker_index;
-        newItem.rarity = DEFAULT_RARITY_ID;
+        newItem.rarity = entry.item.rarity;
         newItem.quality = DEFAULT_QUALITY_ID;
       } else if (entry.kind === "agent") {
         newItem = getDefaultItem(String(nextId++));
@@ -1267,7 +1266,7 @@ const App = () => {
   const updateAttribute = (attrId: string, value: string) => {
     if (!selectedItem) return;
     const attributes = { ...selectedItem.attributes };
-    const cleanedValue = value.trim();
+    const cleanedValue = value ? value.trim() : "";
     if (cleanedValue) {
       attributes[attrId] =
         attrId === "6" ? normalizePaintIndex(cleanedValue) : cleanedValue;

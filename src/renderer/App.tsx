@@ -358,144 +358,6 @@ const getLiveImageSrc = (src: string | undefined, nonce: number) => {
   return `${src}${joiner}t=${nonce}`;
 };
 
-// const imageCache = new Map<string, string>();
-// const imagePromiseCache = new Map<string, Promise<string>>();
-// // Maximum number of cached images, helps with memory usage (5gb mem usage was too much, of course.)
-// const MAX_IMAGE_CACHE = 200;
-
-// const clearImageCache = () => {
-//   imageCache.forEach((url) => URL.revokeObjectURL(url));
-//   imageCache.clear();
-//   imagePromiseCache.clear();
-// };
-
-// const normalizeImageCacheKey = (src: string) => {
-//   try {
-//     const u = new URL(src);
-
-//     u.searchParams.delete("t");
-//     return u.toString();
-//   } catch (e) {
-//     return src;
-//   }
-// };
-
-// const evictOldImagesIfNeeded = () => {
-//   while (imageCache.size > MAX_IMAGE_CACHE) {
-//     const firstKey = imageCache.keys().next().value;
-//     if (!firstKey) break;
-//     const url = imageCache.get(firstKey);
-//     if (url) URL.revokeObjectURL(url);
-//     imageCache.delete(firstKey);
-//   }
-// };
-
-// const fetchCachedImage = (src: string) => {
-//   const key = normalizeImageCacheKey(src);
-//   const cached = imageCache.get(key);
-//   if (cached) return Promise.resolve(cached);
-//   const inFlight = imagePromiseCache.get(key);
-//   if (inFlight) return inFlight;
-//   const request = fetch(src)
-//     .then((response) => response.blob())
-//     .then((blob) => {
-//       const objectUrl = URL.createObjectURL(blob);
-//       imageCache.set(key, objectUrl);
-
-//       evictOldImagesIfNeeded();
-//       imagePromiseCache.delete(key);
-//       return objectUrl;
-//     })
-//     .catch(() => {
-//       imagePromiseCache.delete(key);
-//       return "";
-//     });
-//   imagePromiseCache.set(key, request);
-//   return request;
-// };
-
-// const useCachedImage = (src?: string, enabled = true) => {
-//   const [cachedSrc, setCachedSrc] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     let active = true;
-//     let didCancel = false;
-//     if (!src || !enabled) {
-//       setCachedSrc(null);
-//       return () => {
-//         active = false;
-//         didCancel = true;
-//       };
-//     }
-//     const cached = imageCache.get(src);
-//     if (cached) {
-//       setCachedSrc(cached);
-//       return () => {
-//         active = false;
-//       };
-//     }
-
-//     const timer = setTimeout(() => {
-//       if (didCancel || !active) return;
-//       fetchCachedImage(src).then((objectUrl) => {
-//         if (!active) return;
-//         if (objectUrl) setCachedSrc(objectUrl);
-//       });
-//     }, 150);
-//     return () => {
-//       active = false;
-//       didCancel = true;
-//       clearTimeout(timer);
-//     };
-//   }, [src, enabled]);
-
-//   return cachedSrc;
-// };
-
-// const useInView = (options?: IntersectionObserverInit) => {
-//   const ref = useRef<HTMLSpanElement | null>(null);
-//   const [inView, setInView] = useState(false);
-//   useEffect(() => {
-//     const element = ref.current;
-//     if (!element) return;
-//     const observer = new IntersectionObserver((entries) => {
-//       entries.forEach((entry) => {
-//         if (entry.isIntersecting) {
-//           setInView(true);
-//           observer.disconnect();
-//         }
-//       });
-//     }, options);
-//     observer.observe(element);
-//     return () => observer.disconnect();
-//   }, [options]);
-
-//   return { ref, inView };
-// };
-
-// const CachedImage = ({
-//   src,
-//   alt,
-//   className,
-//   fallback,
-// }: {
-//   src?: string;
-//   alt: string;
-//   className?: string;
-//   fallback?: ReactNode;
-// }) => {
-//   const { ref, inView } = useInView({ rootMargin: "100px" });
-//   const cachedSrc = useCachedImage(src, inView);
-//   const placeholder = fallback ?? <span>Loading...</span>;
-//   if (!src) return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
-//   if (!inView || !cachedSrc) return <span ref={ref}>{placeholder}</span>;
-//   return (
-//     <span ref={ref}>
-//       <img src={cachedSrc} alt={alt} className={className} loading="lazy" />
-//     </span>
-//   );
-// };
-
 const useInView = (options?: IntersectionObserverInit) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
@@ -536,7 +398,6 @@ export const CachedImage = ({
 }: CachedImageProps) => {
   const { ref, inView } = useInView({ rootMargin: "200px" });
 
-  // If no src, show fallback immediately
   if (!src) return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
 
   return (
@@ -1033,7 +894,7 @@ const App = () => {
 
   const skinsByPaintIndex = useMemo(() => {
     const map = new Map<string, SkinItem[]>();
-    allSkins.forEach((skin) => {
+    allSkins.forEach((skin: any) => {
       if (!skin.paint_index) return;
       const paintIndex = normalizePaintIndex(skin.paint_index);
       const list = map.get(paintIndex) ?? [];
@@ -1052,7 +913,7 @@ const App = () => {
 
   const stickersByIndex = useMemo(() => {
     const map = new Map<string, StickerItem>();
-    stickerItems.forEach((sticker) => {
+    stickerItems.forEach((sticker: any) => {
       if (!sticker.sticker_index) return;
       map.set(String(sticker.sticker_index), sticker);
     });
@@ -1061,7 +922,7 @@ const App = () => {
 
   const skinGroups = useMemo(() => {
     const map = new Map<string, SkinItem[]>();
-    allSkins.forEach((skin) => {
+    allSkins.forEach((skin: any) => {
       if (!skin.paint_index) return;
       const key = getSkinGroupKey(skin);
       const list = map.get(key) ?? [];
@@ -1075,9 +936,9 @@ const App = () => {
   }, [allSkins]);
 
   const librarySkins = useMemo(() => {
-    return Array.from(skinGroups.values()).map((list) => {
+    return Array.from(skinGroups.values()).map((list: any) => {
       return (
-        list.find((skin) =>
+        list.find((skin: any) =>
           skin.wear?.name?.toLowerCase().includes("factory"),
         ) ?? list[0]
       );
@@ -1232,27 +1093,37 @@ const App = () => {
     const result = await window.inventoryApi.openInventory();
     if (!result) return;
     const parsed = parseInventory(result.content);
-    clearImageCache();
     setInventoryDoc(parsed);
     setFilePath(result.filePath);
     setSelectedId(parsed.items[0]?.id ?? null);
     setStatus(`Loaded ${parsed.items.length} items.`);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const content = serializeInventory(inventoryDoc);
-    const result = await window.inventoryApi.saveInventory({
-      filePath: filePath ?? undefined,
-      content,
-    });
-    if (!result) return;
-    setFilePath(result.filePath);
+
+    const blob = new Blob([content], { type: "text/plain" }); // adjust MIME type if needed
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    link.download = filePath ?? "inventory.txt";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(link.href);
+
     setStatus("Inventory saved.");
   };
 
   const handleAdd = () => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
+      items.reduce(
+        (max: any, item: any) => Math.max(max, Number(item.id) || 0),
+        0,
+      ) + 1,
     );
     const newItem = getDefaultItem(nextId);
     setInventoryDoc({
@@ -1264,7 +1135,7 @@ const App = () => {
 
   const handleRemove = () => {
     if (!selectedItem) return;
-    const nextItems = items.filter((item) => item.id !== selectedItem.id);
+    const nextItems = items.filter((item: any) => item.id !== selectedItem.id);
     setInventoryDoc({ ...inventoryDoc, items: nextItems });
     setSelectedId(nextItems[0]?.id ?? null);
   };
@@ -1272,7 +1143,9 @@ const App = () => {
   const updateItem = (updated: InventoryItem) => {
     setInventoryDoc({
       ...inventoryDoc,
-      items: items.map((item) => (item.id === updated.id ? updated : item)),
+      items: items.map((item: any) =>
+        item.id === updated.id ? updated : item,
+      ),
     });
   };
 
@@ -1289,7 +1162,7 @@ const App = () => {
     key: string,
     entry: LibrarySelectionEntry,
   ) => {
-    setLibrarySelection((prev) => {
+    setLibrarySelection((prev: any) => {
       if (prev[key]) {
         const next = { ...prev };
         delete next[key];
@@ -1300,7 +1173,7 @@ const App = () => {
   };
 
   const addSelectedLibraryItems = () => {
-    const selected = Object.values(librarySelection);
+    const selected: any = Object.values(librarySelection);
     if (selected.length === 0) return;
     setLibraryAddProgress({ total: selected.length, current: 0 });
     setStatus(
@@ -1308,7 +1181,10 @@ const App = () => {
     );
 
     let nextId =
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+      items.reduce(
+        (max: any, item: any) => Math.max(max, Number(item.id) || 0),
+        0,
+      ) + 1;
     const nextItems = [...items];
     let addedCount = 0;
 

@@ -2329,9 +2329,9 @@ const App = () => {
                     >
                       <option value="Any">Any</option>
                       {[
-                        ...weaponDefIndexes,
-                        ...knifeDefIndexes,
-                        ...gloveDefIndexes,
+                        ...def_index.weapons,
+                        ...def_index.knives,
+                        ...def_index.gloves,
                       ].map((weapon) => (
                         <option key={weapon.id} value={weapon.id}>
                           {weapon.name}

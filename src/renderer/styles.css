@@ -514,8 +514,9 @@ body {
   flex: 1;
   z-index: 1;
   min-height: 0;
-  grid-auto-rows: minmax(0, auto);
+  grid-auto-rows: minmax(0, 1fr);
   overflow-y: auto;
+  align-items: stretch;
 }
 
 .app__main--home {

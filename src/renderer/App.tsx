@@ -1266,7 +1266,7 @@ const App = () => {
   const updateAttribute = (attrId: string, value: string) => {
     if (!selectedItem) return;
     const attributes = { ...selectedItem.attributes };
-    const cleanedValue = value.trim();
+    const cleanedValue = value?.trim() ?? "";
     if (cleanedValue) {
       attributes[attrId] =
         attrId === "6" ? normalizePaintIndex(cleanedValue) : cleanedValue;
@@ -1503,8 +1503,14 @@ const App = () => {
 
   const applyStickerFromLibrary = (sticker: StickerItem) => {
     if (selectedItem && selectedItem.def_index === STICKER_DEF_INDEX) {
-      updateAttribute("113", sticker.sticker_index);
-      setStatus(`Updated sticker item ${selectedItem.id} to ${sticker.name}.`);
+      if (sticker.sticker_index) {
+        updateAttribute("113", sticker.sticker_index);
+        setStatus(`Updated sticker item ${selectedItem.id} to ${sticker.name}.`);
+      }
+      return;
+    }
+    if (!sticker.sticker_index) {
+      setStatus(`Error: Sticker ${sticker.name} has no sticker_index.`);
       return;
     }
     const nextId = String(

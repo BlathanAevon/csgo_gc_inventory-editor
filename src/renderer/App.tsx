@@ -21,8 +21,6 @@ import {
   ApiItem,
   SkinItem,
   StickerItem,
-  CrateItem,
-  KeyItem,
   AgentItem,
   CollectibleItem,
   MusicKitItem,
@@ -52,7 +50,7 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...def_index.weapons, ...def_index.knives, ...def_index.gloves].map(
+  [...def_index.weapons, ...def_index.knives, ...def_index.gloves, ...def_index.crates, ...def_index.keys].map(
     (item) => [item.id, item.name],
   ),
 );
@@ -2025,7 +2023,6 @@ const App = () => {
                           />
                           <div className="library-card__meta">
                             <strong className="item-tile__name">{name}</strong>
-                            <strong className="item-tile__name">{item.name}</strong>
                             <span className="item-tile__meta">
                               ID {item.id}
                             </span>
@@ -2223,6 +2220,8 @@ const App = () => {
                         ...def_index.weapons,
                         ...def_index.knives,
                         ...def_index.gloves,
+                        ...def_index.crates,
+                        ...def_index.keys,
                       ].map((weapon) => (
                         <option key={weapon.id} value={weapon.id}>
                           {weapon.name}

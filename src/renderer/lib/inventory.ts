@@ -115,12 +115,13 @@ const buildItemObject = (item: InventoryItem): KvObject => {
   }
 
   const attributeEntries = Object.entries(item.attributes).filter(
-    ([, value]) => value.trim().length > 0,
+    ([, value]) => (value ?? "").trim().length > 0,
   );
+
   if (attributeEntries.length > 0) {
     const attributes: KvObject = {};
     attributeEntries.forEach(([key, value]) => {
-      attributes[key] = value;
+      attributes[key] = value ?? ""; 
     });
     result.attributes = attributes;
   }

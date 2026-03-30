@@ -1505,11 +1505,6 @@ const App = () => {
   };
 
   const applyStickerFromLibrary = (sticker: StickerItem) => {
-    if (selectedItem && selectedItem.def_index === STICKER_DEF_INDEX) {
-      updateAttribute("113", sticker.sticker_index);
-      setStatus(`Updated sticker item ${selectedItem.id} to ${sticker.name}.`);
-      return;
-    }
     const nextId = String(
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );

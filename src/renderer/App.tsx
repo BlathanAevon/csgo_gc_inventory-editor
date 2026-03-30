@@ -509,7 +509,7 @@ const App = () => {
     total: number;
     current: number;
   } | null>(null);
-  const [inventoryPage, setInventoryPage] = useState(1);
+  // const [inventoryPage, setInventoryPage] = useState(1);
   const [wearPickerOpen, setWearPickerOpen] = useState(false);
   const [wearPickerOptions, setWearPickerOptions] = useState<SkinItem[]>([]);
   const [wearPickerSkin, setWearPickerSkin] = useState<SkinItem | null>(null);
@@ -1000,37 +1000,11 @@ const App = () => {
     musicKitsByDefIndex,
   ]);
 
-  const totalInventoryPages = Math.max(
-    1,
-    Math.ceil(filteredItems.length / INVENTORY_PAGE_SIZE),
-  );
-  const pagedItems = useMemo(() => {
-    const start = (inventoryPage - 1) * INVENTORY_PAGE_SIZE;
-    return filteredItems.slice(start, start + INVENTORY_PAGE_SIZE);
-  }, [filteredItems, inventoryPage]);
-
-  useEffect(() => {
-    setInventoryPage(1);
-  }, [
-    search,
-    activeFilter,
-    inventoryRarity,
-    inventoryQuality,
-    inventoryEquipped,
-    items.length,
-  ]);
-
   useEffect(() => {
     const handleClose = () => setContextMenu(null);
     window.addEventListener("click", handleClose);
     return () => window.removeEventListener("click", handleClose);
   }, []);
-
-  useEffect(() => {
-    if (inventoryPage > totalInventoryPages) {
-      setInventoryPage(totalInventoryPages);
-    }
-  }, [inventoryPage, totalInventoryPages]);
 
   const handleLoad = () => {
     const input = document.createElement("input");
@@ -1917,7 +1891,7 @@ const App = () => {
                     </div>
                   </div>
                   <div className="inventory-grid">
-                    {pagedItems.map((item) => {
+                    {filteredItems.map((item) => {
                       const agent = agentsIndex.get(item.def_index) ?? null;
                       const wear = getWearValue(item.attributes["8"]);
                       const match = findSkinMatch(
@@ -2030,7 +2004,7 @@ const App = () => {
                       );
                     })}
                   </div>
-                  <div className="inventory-pagination">
+                  {/* <div className="inventory-pagination">
                     <button
                       className="btn btn--ghost"
                       type="button"
@@ -2056,7 +2030,7 @@ const App = () => {
                     >
                       Next →
                     </button>
-                  </div>
+                  </div> */}
                 </section>
               </div>
             </div>

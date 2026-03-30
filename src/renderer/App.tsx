@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { parseInventory, serializeInventory, type InventoryDoc, type InventoryItem } from "./lib/inventory";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import {
+  parseInventory,
+  serializeInventory,
+  type InventoryDoc,
+  type InventoryItem,
+} from "./lib/inventory";
 import agents from "./data/agents.json";
+import { urls } from "./data/urls";
+import { cs2names, cs2indexes } from "./data/cs2names";
 
-const BASE_WEAPONS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/base_weapons.json"
-const CRATES_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/crates.json"
-const KEYS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/keys.json"
-const SKINS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins_not_grouped.json"
-const KNIFE_SKINS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json" 
-const STICKERS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json"
-const COLLECTIBLES_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collectibles.json"
-const MUSIC_KITS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/music_kits.json"
-
-const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
@@ -30,7 +34,7 @@ const qualityOptions = [
   { id: "9", name: "Strange" },
   { id: "10", name: "Completed" },
   { id: "11", name: "Haunted" },
-  { id: "12", name: "Tournament" }
+  { id: "12", name: "Tournament" },
 ];
 
 const inventoryQualityOptions = [{ id: "Any", name: "Any" }, ...qualityOptions];
@@ -44,7 +48,7 @@ const rarityOptions = [
   { id: "5", name: "Classified" },
   { id: "6", name: "Covert" },
   { id: "7", name: "Contraband" },
-  { id: "99", name: "Unusual" }
+  { id: "99", name: "Unusual" },
 ];
 
 const inventoryRarityOptions = [{ id: "Any", name: "Any" }, ...rarityOptions];
@@ -56,14 +60,14 @@ const filterOptions = [
   { id: "knives", label: "Knives" },
   { id: "gloves", label: "Gloves" },
   { id: "agents", label: "Agents" },
-  { id: "stickers", label: "Stickers" }
+  { id: "stickers", label: "Stickers" },
 ] as const;
 
 const inventoryEquippedOptions = [
   { id: "all", label: "All" },
   { id: "equipped", label: "Equipped" },
   { id: "2", label: "CT Equipped" },
-  { id: "3", label: "T Equipped" }
+  { id: "3", label: "T Equipped" },
 ] as const;
 
 type FilterId = (typeof filterOptions)[number]["id"];
@@ -113,7 +117,7 @@ const weaponDefIndexes = [
   { id: "60", name: "M4A1-S" },
   { id: "61", name: "USP-S" },
   { id: "63", name: "CZ-75" },
-  { id: "64", name: "R8 Revolver" }
+  { id: "64", name: "R8 Revolver" },
 ];
 
 const knifeDefIndexes = [
@@ -138,12 +142,10 @@ const knifeDefIndexes = [
   { id: "522", name: "Stiletto Knife" },
   { id: "523", name: "Talon Knife" },
   { id: "525", name: "Skeleton Knife" },
-  { id: "526", name: "Kukri Knife" }
+  { id: "526", name: "Kukri Knife" },
 ];
 
-const musickitDefIndex = [
-{ id: "1314", name: "Music Kit"}
-];
+const musickitDefIndex = [{ id: "1314", name: "Music Kit" }];
 
 const gloveDefIndexes = [
   { id: "5027", name: "Bloodhound" },
@@ -153,7 +155,7 @@ const gloveDefIndexes = [
   { id: "5035", name: "Hydra Gloves" },
   { id: "5033", name: "Moto Gloves" },
   { id: "5034", name: "Specialist Gloves" },
-  { id: "5030", name: "Sport Gloves" }
+  { id: "5030", name: "Sport Gloves" },
 ];
 
 const weaponDefIndexSet = new Set(weaponDefIndexes.map((item) => item.id));
@@ -166,7 +168,10 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...weaponDefIndexes, ...knifeDefIndexes, ...gloveDefIndexes].map((item) => [item.id, item.name])
+  [...weaponDefIndexes, ...knifeDefIndexes, ...gloveDefIndexes].map((item) => [
+    item.id,
+    item.name,
+  ]),
 );
 
 type ApiItem = {
@@ -220,14 +225,24 @@ type MusicKitItem = ApiItem & {
   exclusive?: boolean;
 };
 
-type PreviewItem = ApiItem | SkinItem | AgentItem | StickerItem | CollectibleItem | MusicKitItem;
+type PreviewItem =
+  | ApiItem
+  | SkinItem
+  | AgentItem
+  | StickerItem
+  | CollectibleItem
+  | MusicKitItem;
 
 const agentItems = agents as AgentItem[];
 
 const isPremierCollectible = (item: CollectibleItem) => {
   const type = item.type?.toLowerCase() ?? "";
   const name = item.name?.toLowerCase() ?? "";
-  return item.premier_season != null || type.includes("premier") || name.includes("premier");
+  return (
+    item.premier_season != null ||
+    type.includes("premier") ||
+    name.includes("premier")
+  );
 };
 
 const isMusicKitStatTrak = (kit: MusicKitItem) =>
@@ -241,11 +256,11 @@ const rarityPalette: Record<string, string> = {
   Classified: "#d32ce6",
   Covert: "#eb4b4b",
   Contraband: "#e4ae39",
-  "Extraordinary": "#eb4b4b",
+  Extraordinary: "#eb4b4b",
   Distinguished: "#4b69ff",
   Exceptional: "#8847ff",
   Superior: "#d32ce6",
-  Master: "#eb4b4b"
+  Master: "#eb4b4b",
 };
 
 const libraryRarityOptions = [
@@ -260,7 +275,7 @@ const libraryRarityOptions = [
   "Distinguished",
   "Exceptional",
   "Superior",
-  "Master"
+  "Master",
 ];
 
 const libraryQualityOptions = ["Any", "Normal", "StatTrak", "Souvenir"];
@@ -276,7 +291,7 @@ const libraryTypeOptions = [
   "cases",
   "keys",
   "music",
-  "collectibles"
+  "collectibles",
 ] as const;
 type LibraryType = (typeof libraryTypeOptions)[number];
 
@@ -297,312 +312,6 @@ type Contributor = {
   contributions: number;
 };
 
-const cs2SkinNames = new Set(
-  [
-    "AK-47 Inheritance",
-    "AWP Chrome Cannon",
-    "AWP Queen's Gambit",
-    "Glock-18 Fully Tuned",
-    "P90 Deathgaze",
-    "P250 Kintsugi",
-    "AK-47 Crane Flight",
-    "MP9 Urban Sovereign",
-    "Galil AR Galigator",
-    "MP7 Amberline",
-    "M4A1-S Electrum",
-    "Desert Eagle Firebreathing",
-    "PP-Bizon RMX",
-    "USP-S Silent Shot",
-    "Five-SeveN Dark Polymer",
-    "Sawed-Off Fusion",
-    "UMP-45 Fragment",
-    "M4A4 Zubastick",
-  "M249 Bock Blocks",
-  "Sport Gloves Blaze",
-    "Sport Gloves Creme Pinstripe",
-    "Sport Gloves Frosty",
-    "Sport Gloves Occult",
-    "Sport Gloves Red Racer",
-    "Sport Gloves Ultra Violent",
-    "Sport Gloves Violet Beadwork",
-
-    "Specialist Gloves Big Swell",
-    "Specialist Gloves Blackbook",
-    "Specialist Gloves Chocolate Chesterfield",
-    "Specialist Gloves Cloud Chaser",
-    "Specialist Gloves Lime Polycam",
-    "Specialist Gloves Pillow Punchers",
-    "Specialist Gloves Sunburst",
-
-    "Driver Gloves Brocade Crane",
-    "Driver Gloves Brocade Flowers",
-    "Driver Gloves Dragon Fists",
-    "Driver Gloves Garden",
-    "Driver Gloves Hand Sweaters",
-    "Driver Gloves Plum Quill",
-    "Driver Gloves Seigaiha",
-    "Driver Gloves Wave Chaser",
-
-    "USP-S Jawbreaker",
-    "Zeus x27 Olympus",
-    "M4A1-S Black Lotus",
-    "Sawed-Off Analog Input",
-    "MP7 Just Smile",
-    "Five-SeveN Hybrid",
-    "M4A4 Etch Lord",
-    "Glock-18 Block-18",
-    "XM1014 Irezumi",
-    "UMP-45 Motorized",
-    "Tec-9 Slag",
-    "SSG 08 Dezastre",
-    "Nova Dark Sigil",
-    "MAC-10 Light Box",
-    "Dual Berettas Hideout",
-    "Desert Eagle Heat Treated",
-    "M4A1-S Vaporwave",
-    "Glock-18 Gold Toof",
-    "UMP-45 Neo-Noir",
-    "P250 Epicenter",
-    "AK-47 The Outsiders",
-    "SSG 08 Rapid Transit",
-    "P90 Randy Rush",
-    "MAC-10 Saibā Oni",
-    "M4A4 Turbine",
-    "Dual Berettas Hydro Strike",
-    "USP-S 27",
-    "SCAR-20 Trail Blazer",
-    "R8 Revolver Tango",
-    "MP5-SD Statics",
-    "M249 Hypnosis",
-    "Desert Eagle Calligraffiti",
-    "AUG Luxe Trim",
-    "AWP CMYK",
-    "Desert Eagle Starcade",
-    "AUG Lil' Pig",
-    "P90 Attack Vector",
-    "M4A4 Polysoup",
-    "CZ75-Auto Slalom",
-    "XM1014 Halftone Shift",
-    "SG 553 Berry Gel Coat",
-    "SCAR-20 Wild Berry",
-    "AK-47 Crossfade",
-    "SSG 08 Halftone Whorl",
-    "P2000 Coral Halftone",
-    "MP7 Astrolabe",
-    "M249 Spectrogram",
-    "Galil AR NV",
-    "FAMAS Halftone Wash",
-    "AK-47 B the Monster",
-    "Zeus x27 Dragon Snore",
-    "AWP Crakow!",
-    "XM1014 Monster Melt",
-    "Dual Berettas Sweet Little Angels",
-    "AUG Eye of Zapems",
-    "Nova Wurst Hölle",
-    "MAC-10 Pipsqueak",
-    "Glock-18 Teal Graf",
-    "Galil AR Metallic Squeezer",
-    "MP5-SD Neon Squeezer",
-    "P90 Wash me",
-    "Negev Wall Bang",
-    "M4A1-S Wash me plz",
-    "Five-SeveN Midnight Paintover",
-    "Desert Eagle Tilted",
-    "M4A1-S Fade",
-    "Glock-18 AXIA",
-    "Galil AR Rainbow Spoon",
-    "UMP-45 Crimson Foil",
-    "MP9 Arctic Tri-Tone",
-    "Five-SeveN Heat Treated",
-    "USP-S Alpine Camo",
-    "SSG 08 Zeno",
-    "P250 Small Game",
-    "Nova Yorkshire",
-    "MP5-SD Savannah Halftone",
-    "PP-Bizon Cold Cell",
-    "Tec-9 Tiger Stencil",
-    "MAG-7 Wildwood",
-    "FAMAS Half Sleeve",
-    "AK-47 Olive Polycam",
-    "XM1014 Solitude",
-    "M4A1-S Stratosphere",
-    "USP-S Royal Guard",
-    "AK-47 Midnight Laminate",
-    "Desert Eagle Mint Fan",
-    "FAMAS Yeti Camo",
-    "P2000 Royal Baroque",
-    "MP9 Cobalt Paisley",
-    "P90 Reef Grief",
-    "Zeus x27 Electric Blue",
-    "Nova Turquoise Pour",
-    "M4A4 Naval Shred Camo",
-    "Galil AR Robin's Egg",
-    "Glock-18 Ocean Topo",
-    "Dual Berettas Rose Nacre",
-    "Five-SeveN Sky Blue",
-    "XM1014 Gum Wall Camo",
-    "Negev Sour Grapes",
-    "Tec-9 Blue Blast",
-    "MP9 Buff Blue",
-    "P90 Blue Tac",
-    "P250 Plum Netting",
-    "SG 553 Night Camo",
-    "Sawed-Off Runoff",
-    "R8 Revolver Cobalt Grip",
-    "Galil AR Grey Smoke",
-    "SSG 08 Grey Smoke",
-    "MP5-SD Lime Hex",
-    "MAC-10 Storm Camo",
-    "AWP Green Energy",
-    "Glock-18 Glockingbird",
-    "M4A4 Sheet Lightning",
-    "AK-47 Wintergreen",
-    "USP-S Tropical Breeze",
-    "MAC-10 Poplar Thicket",
-    "MP5-SD Gold Leaf",
-    "XM1014 Copperflage",
-    "MAC-10 Acid Hex",
-    "AK-47 VariCamo Grey",
-    "P90 Mustard Gas",
-    "R8 Revolver Leafhopper",
-    "Galil AR Acid Dart",
-    "SSG 08 Tiger Tear",
-    "Tec-9 Garter-9",
-    "P2000 Marsh",
-    "Dual Berettas Polished Malachite",
-    "Zeus x27 Swamp DDPAT",
-    "P250 Copper Oxide",
-    "Negev Raw Ceramic",
-    "AUG Commando Company",
-    "SSG 08 Green Ceramic",
-    "MP9 Pine",
-    "FAMAS Palm",
-    "Tec-9 Raw Ceramic",
-    "M249 Sage Camo",
-    "MAG-7 Copper Oxide",
-    "UMP-45 Green Swirl",
-    "G3SG1 Green Cell",
-    "AWP Printstream",
-    "FAMAS Bad Trip",
-    "UMP-45 K.O. Factory",
-    "Glock-18 Shinobu",
-    "AK-47 Searing Rage",
-    "Zeus x27 Tosai",
-    "P90 Wave Breaker",
-    "Nova Rising Sun",
-    "Galil AR Control",
-    "Desert Eagle Serpent Strike",
-    "XM1014 Mockingbird",
-    "USP-S PC-GRN",
-    "SSG 08 Memorial",
-    "P2000 Sure Grip",
-    "MP9 Nexus",
-    "MAG-7 Resupply",
-    "M4A4 Choppa",
-    "AK-47 Nouveau Rouge",
-    "M4A1-S Glitched Paint",
-    "Desert Eagle Mulberry",
-    "USP-S Bleeding Edge",
-    "SSG 08 Blush Pour",
-    "AWP Arsenic Spill",
-    "M4A1-S Rose Hex",
-    "P250 Red Tide",
-    "Glock-18 Coral Bloom",
-    "MP9 Shredded",
-    "FAMAS Grey Ghost",
-    "M4A4 Steel Work",
-    "P250 Sedimentary",
-    "Galil AR O-Ranger",
-    "SG 553 Basket Halftone",
-    "Tec-9 Citric Acid",
-    "MP7 Short Ochre",
-    "Five-SeveN Autumn Thicket",
-    "G3SG1 Red Jasper",
-    "PP-Bizon Wood Block Camo",
-    "Dual Berettas BorDeux",
-    "Nova Marsh Grass",
-    "SCAR-20 Short Ochre",
-    "XM1014 Canvas Cloud",
-    "CZ75-Auto Pink Pearl",
-    "MAC-10 Bronzer",
-    "P90 Desert Halftone",
-    "MP9 Multi-Terrain",
-    "AWP LongDog",
-    "MP9 Latte Rush",
-    "M4A4 Hellish",
-    "Zeus x27 Charged Up",
-    "Tec-9 Whiteout",
-    "MAC-10 Derailment",
-    "XM1014 Run Run Run",
-    "UMP-45 Late Night Transit",
-    "FAMAS 2A2F",
-    "Glock-18 Green Line",
-    "P250 Constructivist",
-    "Nova Rain Station",
-    "Galil AR Green Apple",
-    "P90 Straight Dimes",
-    "CZ75-Auto Copper Fiber",
-    "AUG Steel Sentinel",
-    "M4A1-S Solitude",
-    "AK-47 The Oligarch",
-    "M4A4 Full Throttle",
-    "Glock-18 Mirror Mosaic",
-    "MP7 Smoking Kills",
-    "AWP Ice Coaled",
-    "UMP-45 Continuum",
-    "MAC-10 Cat Fight",
-    "Dual Berettas Angel Eyes",
-    "M4A1-S Liquidation",
-    "Nova Ocular",
-    "MP5-SD Focus",
-    "MAG-7 MAGnitude",
-    "P250 Bullfrog",
-    "MP9 Broken Record",
-    "P2000 Red Wing",
-    "AUG Trigger Discipline",
-    "SCAR-20 Caged",
-    "AK-47 Aphrodite",
-    "AWP The End",
-    "AK-47 Breakthrough",
-    "Glock-18 Trace Lock",
-    "AUG Creep",
-    "Desert Eagle The Daily Deagle",
-    "P2000 Grip Tape",
-    "P90 Aeolian Light",
-    "FAMAS Vendetta",
-    "M4A4 Aeolian Dark",
-    "MAC-10 Snow Splash",
-    "MP5-SD Snow Splash",
-    "R8 Revolver Dark Chamber",
-    "PP-Bizon Bizoom",
-    "Dual Berettas Silver Pour",
-    "M249 Sleet",
-    "MP9 Dizzy",
-    "Nova Currents",
-    "P250 Sleet",
-    "SCAR-20 Zinc",
-    "SSG 08 Sans Comic",
-    "M4A1-S Party Animal",
-    "AWP Exothermic",
-    "USP-S Sleeping Potion",
-    "Zeus x27 Earth Mandala",
-    "UMP-45 Warm Blooded",
-    "Galil AR Sky Mandala",
-    "Five-SeveN Fraise Crane",
-    "XM1014 XoooM",
-    "Tec-9 Banana Leaf",
-    "SSG 08 Calligrafaux",
-    "MP7 Coral Paisley",
-    "MP5-SD Picnic",
-    "Sawed-Off Crimson Batik",
-    "SG 553 Safari Print",
-    "R8 Revolver Mauve Aside",
-    "PP-Bizon Thermal Currents",
-    "MP9 Bee-Tron",
-    "FAMAS Byproduct",
-    "CZ75-Auto Honey Paisley"
-  ].map((name) => name.toLowerCase())
-);
 
 const wearSuffixRegex =
   /\s*\((factory new|minimal wear|field-tested|well-worn|battle-scarred)\)\s*$/i;
@@ -621,24 +330,26 @@ const normalizeSkinName = (name?: string) => {
 
 const isKnifeSkinName = (name?: string) => {
   const normalized = normalizeSkinName(name);
-  return Boolean(normalized) && normalized.includes("knife") && !normalized.includes("glove");
+  return (
+    Boolean(normalized) &&
+    normalized.includes("knife") &&
+    !normalized.includes("glove")
+  );
 };
 
 const getSkinDisplayName = (name?: string) => {
   if (!name) return "";
-  return name
-    .replace(wearSuffixRegex, "")
-    .trim();
+  return name.replace(wearSuffixRegex, "").trim();
 };
 
 const isCs2SkinName = (name?: string) => {
   if (!name) return false;
   const normalized = normalizeSkinName(name);
   if (normalized.includes("warhammer")) return true;
-  if (cs2SkinNames.has(normalized)) return true;
+  if (cs2names.skins.has(normalized)) return true;
   if (name.includes("|")) {
     const afterPipe = normalizeSkinName(name.split("|").slice(1).join("|"));
-    return cs2SkinNames.has(afterPipe);
+    return cs2names.skins.has(afterPipe);
   }
   return false;
 };
@@ -650,25 +361,13 @@ const isKukriSkinName = (name?: string) =>
 const isKukriWeaponName = (name?: string) =>
   name ? normalizeSkinName(name).includes("kukri knife") : false;
 
-const cs2CaseNames = new Set(
-  [
-    "Fever Case",
-    "Sealed Genesis Terminal",
-    "Gallery Case",
-    "Kilowatt Case",
-    "Sealed Dead Hand Terminal"
-  ].map((name) => name.toLowerCase())
-);
-
 const isCs2CaseName = (name?: string) =>
-  name ? cs2CaseNames.has(name.toLowerCase()) : false;
+  name ? cs2names.cases.has(name.toLowerCase()) : false;
 
 const cs2KeyNames = new Set(
-  [
-    "Fever Case Key",
-    "Gallery Case Key",
-    "Kilowatt Case Key"
-  ].map((name) => name.toLowerCase())
+  ["Fever Case Key", "Gallery Case Key", "Kilowatt Case Key"].map((name) =>
+    name.toLowerCase(),
+  ),
 );
 
 const isCs2KeyName = (name?: string) =>
@@ -680,109 +379,24 @@ const isCs2MusicKitName = (name?: string) =>
 const isPostCsgoYearName = (name?: string) =>
   name ? /(2024|2025)/i.test(name) : false;
 
-const cs2CollectibleDefIndexes = new Set([
-  "4906",
-  "4907",
-  "4908",
-  "4909",
-  "4910",
-  "4911",
-  "4916",
-  "4917",
-  "4918",
-  "4919",
-  "4920",
-  "4921",
-  "4922",
-  "4933",
-  "4934",
-  "4935",
-  "4936",
-  "4941",
-  "4942",
-  "4943",
-  "4944",
-  "4945",
-  "4951",
-  "4952",
-  "4953",
-  "4954",
-  "4955",
-  "4956",
-  "4957",
-  "4958",
-  "4959",
-  "4960",
-  "4961",
-  "4962",
-  "4963",
-  "4974",
-  "4975",
-  "4976",
-  "4977",
-  "4982",
-  "4983",
-  "4984",
-  "4985",
-  "5110",
-  "5111",
-  "5112",
-  "5113",
-  "5114",
-  "5115",
-  "5116",
-  "5127",
-  "5128",
-  "5129",
-  "5130",
-  "5135",
-  "5136",
-  "5137",
-  "5138",
-  "5139",
-  "5177",
-  "5178",
-  "5179",
-  "5180",
-  "5209",
-  "5210",
-  "5211",
-  "5212",
-  "5213",
-  "5214",
-  "5215",
-  "5226",
-  "5227",
-  "5228",
-  "5229",
-  "5270",
-  "5271",
-  "5272",
-  "5273",
-  "5274",
-  "5275",
-  "5276",
-  "5277",
-  "5278",
-  "5279",
-  "5280"
-]);
 
 const isCs2Collectible = (item: CollectibleItem) => {
   const name = item.name ?? "";
   if (/(2024|2025|2026)/i.test(name)) return true;
-  if (item.def_index && cs2CollectibleDefIndexes.has(item.def_index)) return true;
+  if (item.def_index && cs2indexes.collectibleDefIndexes.has(item.def_index))
+    return true;
   return false;
 };
 
 const rarityNameToId = new Map(
-  rarityOptions.map((option) => [option.name.toLowerCase(), option.id])
+  rarityOptions.map((option) => [option.name.toLowerCase(), option.id]),
 );
 
 const getRarityIdFromName = (rarityName?: string) =>
   rarityName ? rarityNameToId.get(rarityName.toLowerCase()) : undefined;
 
-const getRandomPatternTemplate = () => String(Math.floor(Math.random() * 999) + 1);
+const getRandomPatternTemplate = () =>
+  String(Math.floor(Math.random() * 999) + 1);
 const DEFAULT_QUALITY_ID = "0";
 const DEFAULT_RARITY_ID = "0";
 const KNIFE_GLOVE_QUALITY_ID = "3";
@@ -797,7 +411,10 @@ const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
     item.rarity = KNIFE_GLOVE_RARITY_ID;
     return;
   }
-  if (gloveDefIndexSet.has(defIndex) && !DEFAULT_GLOVE_DEF_INDEXES.has(defIndex)) {
+  if (
+    gloveDefIndexSet.has(defIndex) &&
+    !DEFAULT_GLOVE_DEF_INDEXES.has(defIndex)
+  ) {
     item.quality = KNIFE_GLOVE_QUALITY_ID;
     item.rarity = KNIFE_GLOVE_RARITY_ID;
   }
@@ -815,7 +432,7 @@ const getDefaultItem = (id: string): InventoryItem => ({
   origin: "8",
   in_use: "0",
   rarity: DEFAULT_RARITY_ID,
-  attributes: {}
+  attributes: {},
 });
 
 const getOptionLabel = (id: string, options: { id: string; name: string }[]) =>
@@ -860,7 +477,6 @@ const getWearRangeForSkin = (skin: SkinItem) => {
   const wearName = getWearNameFromSkin(skin);
   return getWearRangeFromName(wearName);
 };
-
 
 const getRandomFloatForSkin = (skin: SkinItem) => {
   const wearRange = getWearRangeForSkin(skin);
@@ -924,7 +540,6 @@ const normalizeImageCacheKey = (src: string) => {
     u.searchParams.delete("t");
     return u.toString();
   } catch (e) {
-
     return src;
   }
 };
@@ -1026,7 +641,7 @@ const CachedImage = ({
   src,
   alt,
   className,
-  fallback
+  fallback,
 }: {
   src?: string;
   alt: string;
@@ -1054,11 +669,13 @@ const getSkinFlags = (item: InventoryItem) => {
 const getPreviewKey = (item: InventoryItem) => ({
   defIndex: item.def_index,
   finish: item.attributes["6"],
-  isSticker: false
+  isSticker: false,
 });
 
 const getBaseName = (item: InventoryItem, baseIndex: Map<string, ApiItem>) =>
-  baseIndex.get(item.def_index)?.name ?? defIndexLabels.get(item.def_index) ?? "";
+  baseIndex.get(item.def_index)?.name ??
+  defIndexLabels.get(item.def_index) ??
+  "";
 
 const getDisplayName = (
   item: InventoryItem,
@@ -1067,9 +684,10 @@ const getDisplayName = (
   agent?: AgentItem | null,
   sticker?: StickerItem | null,
   musicKit?: MusicKitItem | null,
-  collectible?: CollectibleItem | null
+  collectible?: CollectibleItem | null,
 ) => {
-  if (skinMatch?.name) return getSkinDisplayName(skinMatch.name) || skinMatch.name;
+  if (skinMatch?.name)
+    return getSkinDisplayName(skinMatch.name) || skinMatch.name;
   if (agent?.name) return agent.name;
   if (sticker?.name) return sticker.name;
   if (musicKit?.name) return musicKit.name;
@@ -1088,7 +706,7 @@ const getPreviewImage = (
   crateIndex: Map<string, ApiItem>,
   keyIndex: Map<string, ApiItem>,
   skinMatch?: SkinItem | null,
-  agent?: AgentItem | null
+  agent?: AgentItem | null,
 ) => {
   if (skinMatch?.image) return skinMatch.image;
   if (agent?.image) return agent.image;
@@ -1104,11 +722,7 @@ const getPreviewImage = (
   if (preview?.image) return preview.image;
 
   if (gloveDefIndexSet.has(item.def_index)) {
-    return (
-      baseIndex.get("5029")?.image ??
-      baseIndex.get("5028")?.image ??
-      ""
-    );
+    return baseIndex.get("5029")?.image ?? baseIndex.get("5028")?.image ?? "";
   }
 
   return "";
@@ -1117,7 +731,7 @@ const getPreviewImage = (
 const findSkinMatch = (
   item: InventoryItem,
   paintIndexMap: Map<string, SkinItem[]>,
-  wearValue: number
+  wearValue: number,
 ) => {
   const paintIndex = normalizePaintIndex(item.attributes["6"]);
   if (!paintIndex) return null;
@@ -1125,12 +739,15 @@ const findSkinMatch = (
   if (candidates.length === 0) return null;
 
   const weaponId = Number(item.def_index);
-  const weaponMatches = candidates.filter((candidate) => candidate.weapon?.weapon_id === weaponId);
+  const weaponMatches = candidates.filter(
+    (candidate) => candidate.weapon?.weapon_id === weaponId,
+  );
   if (weaponMatches.length === 0) return null;
   const pool = weaponMatches;
   const { isStattrak, isSouvenir } = getSkinFlags(item);
   const flagMatches = pool.filter(
-    (candidate) => candidate.stattrak === isStattrak && candidate.souvenir === isSouvenir
+    (candidate) =>
+      candidate.stattrak === isStattrak && candidate.souvenir === isSouvenir,
   );
   if (flagMatches.length === 0) return null;
   const filteredPool = flagMatches;
@@ -1147,7 +764,8 @@ const findSkinMatch = (
   filteredPool.forEach((candidate) => {
     const min = candidate.min_float ?? 0;
     const max = candidate.max_float ?? 1;
-    const distance = wearValue < min ? min - wearValue : wearValue > max ? wearValue - max : 0;
+    const distance =
+      wearValue < min ? min - wearValue : wearValue > max ? wearValue - max : 0;
     if (distance < closestDistance) {
       closestDistance = distance;
       closest = candidate;
@@ -1167,7 +785,9 @@ const App = () => {
   const [skinsNotGrouped, setSkinsNotGrouped] = useState<SkinItem[]>([]);
   const [knifeSkins, setKnifeSkins] = useState<SkinItem[]>([]);
   const [stickerItems, setStickerItems] = useState<StickerItem[]>([]);
-  const [collectibleItems, setCollectibleItems] = useState<CollectibleItem[]>([]);
+  const [collectibleItems, setCollectibleItems] = useState<CollectibleItem[]>(
+    [],
+  );
   const [musicKitItems, setMusicKitItems] = useState<MusicKitItem[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [libraryLoading, setLibraryLoading] = useState(false);
@@ -1181,8 +801,11 @@ const App = () => {
   const [activeFilter, setActiveFilter] = useState<FilterId>("all");
   const [inventoryRarity, setInventoryRarity] = useState("Any");
   const [inventoryQuality, setInventoryQuality] = useState("Any");
-  const [inventoryEquipped, setInventoryEquipped] = useState<InventoryEquippedFilter>("all");
-  const [activePage, setActivePage] = useState<"inventory" | "library" | "credits">("inventory");
+  const [inventoryEquipped, setInventoryEquipped] =
+    useState<InventoryEquippedFilter>("all");
+  const [activePage, setActivePage] = useState<
+    "inventory" | "library" | "credits"
+  >("inventory");
   const [libraryTab, setLibraryTab] = useState<LibraryType>("vanilla");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "popular">("all");
   const [librarySearch, setLibrarySearch] = useState("");
@@ -1191,20 +814,23 @@ const App = () => {
   const [libraryWeapon, setLibraryWeapon] = useState("Any");
   const [cs2Mode, setCs2Mode] = useState(false);
   const [libraryMultiSelect, setLibraryMultiSelect] = useState(false);
-  const [librarySelection, setLibrarySelection] = useState<Record<string, LibrarySelectionEntry>>({});
-  const [libraryAddProgress, setLibraryAddProgress] = useState<
-    | { total: number; current: number }
-    | null
-  >(null);
+  const [librarySelection, setLibrarySelection] = useState<
+    Record<string, LibrarySelectionEntry>
+  >({});
+  const [libraryAddProgress, setLibraryAddProgress] = useState<{
+    total: number;
+    current: number;
+  } | null>(null);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [wearPickerOpen, setWearPickerOpen] = useState(false);
   const [wearPickerOptions, setWearPickerOptions] = useState<SkinItem[]>([]);
   const [wearPickerSkin, setWearPickerSkin] = useState<SkinItem | null>(null);
   const [inventoryImageNonce, setInventoryImageNonce] = useState(0);
-  const [contextMenu, setContextMenu] = useState<
-    | { x: number; y: number; itemId: string }
-    | null
-  >(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    itemId: string;
+  } | null>(null);
   const [attributesOpen, setAttributesOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
   const [credits, setCredits] = useState<Contributor[]>([]);
@@ -1216,7 +842,7 @@ const App = () => {
     setDataLoading(true);
 
     const loaders = [
-      fetch(BASE_WEAPONS_URL)
+      fetch(urls.base_weapons)
         .then((response) => response.json())
         .then((data) => {
           if (!mounted) return;
@@ -1228,7 +854,7 @@ const App = () => {
           }
         }),
 
-      fetch(CRATES_URL)
+      fetch(urls.crates)
         .then((response) => response.json())
         .then((data) => {
           if (!mounted) return;
@@ -1240,7 +866,7 @@ const App = () => {
           }
         }),
 
-      fetch(KEYS_URL)
+      fetch(urls.keys)
         .then((response) => response.json())
         .then((data) => {
           if (!mounted) return;
@@ -1252,7 +878,7 @@ const App = () => {
           }
         }),
 
-      Promise.resolve()
+      Promise.resolve(),
     ];
 
     Promise.allSettled(loaders).finally(() => {
@@ -1268,7 +894,10 @@ const App = () => {
 
   useEffect(() => {
     const updateHeight = () => {
-      document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
+      document.documentElement.style.setProperty(
+        "--app-height",
+        `${window.innerHeight}px`,
+      );
     };
     updateHeight();
     window.addEventListener("resize", updateHeight);
@@ -1277,14 +906,21 @@ const App = () => {
 
   useEffect(() => {
     if (activePage !== "library") return;
-  if (skinsLoaded && knifeSkinsLoaded && stickersLoaded && collectiblesLoaded && musicKitsLoaded) return;
+    if (
+      skinsLoaded &&
+      knifeSkinsLoaded &&
+      stickersLoaded &&
+      collectiblesLoaded &&
+      musicKitsLoaded
+    )
+      return;
     let mounted = true;
     setLibraryLoading(true);
     const loaders = [] as Promise<void>[];
 
     if (!skinsLoaded) {
       loaders.push(
-        fetch(SKINS_URL)
+        fetch(urls.skins_not_grouped)
           .then((response) => response.json())
           .then((data) => {
             if (!mounted) return;
@@ -1295,13 +931,13 @@ const App = () => {
             if (mounted) {
               setStatus("Failed to load skins list.");
             }
-          })
+          }),
       );
     }
 
     if (!knifeSkinsLoaded) {
       loaders.push(
-        fetch(KNIFE_SKINS_URL)
+        fetch(urls.knives)
           .then((response) => response.json())
           .then((data) => {
             if (!mounted) return;
@@ -1319,13 +955,13 @@ const App = () => {
             if (mounted) {
               setStatus("Failed to load knife skins list.");
             }
-          })
+          }),
       );
     }
 
     if (!stickersLoaded) {
       loaders.push(
-        fetch(STICKERS_URL)
+        fetch(urls.stickers)
           .then((response) => response.json())
           .then((data) => {
             if (!mounted) return;
@@ -1336,13 +972,13 @@ const App = () => {
             if (mounted) {
               setStatus("Failed to load sticker list.");
             }
-          })
+          }),
       );
     }
 
     if (!collectiblesLoaded) {
       loaders.push(
-        fetch(COLLECTIBLES_URL)
+        fetch(urls.colletibles)
           .then((response) => response.json())
           .then((data) => {
             if (!mounted) return;
@@ -1353,13 +989,13 @@ const App = () => {
             if (mounted) {
               setStatus("Failed to load collectibles list.");
             }
-          })
+          }),
       );
     }
 
     if (!musicKitsLoaded) {
       loaders.push(
-        fetch(MUSIC_KITS_URL)
+        fetch(urls.music_kits)
           .then((response) => response.json())
           .then((data) => {
             if (!mounted) return;
@@ -1370,7 +1006,7 @@ const App = () => {
             if (mounted) {
               setStatus("Failed to load music kits list.");
             }
-          })
+          }),
       );
     }
 
@@ -1383,7 +1019,14 @@ const App = () => {
     return () => {
       mounted = false;
     };
-  }, [activePage, skinsLoaded, knifeSkinsLoaded, stickersLoaded, collectiblesLoaded, musicKitsLoaded]);
+  }, [
+    activePage,
+    skinsLoaded,
+    knifeSkinsLoaded,
+    stickersLoaded,
+    collectiblesLoaded,
+    musicKitsLoaded,
+  ]);
 
   useEffect(() => {
     if (!libraryMultiSelect) {
@@ -1396,7 +1039,7 @@ const App = () => {
     let mounted = true;
     setCreditsLoading(true);
     setCreditsError(null);
-    fetch("https://api.github.com/repos/dricotec/csgo_gc_inventory-editor/contributors")
+    fetch(urls.contributors)
       .then((response) => response.json())
       .then((data) => {
         if (!mounted) return;
@@ -1410,11 +1053,15 @@ const App = () => {
             login: entry.login,
             avatar_url: entry.avatar_url,
             html_url: entry.html_url,
-            contributions: entry.contributions ?? 0
+            contributions: entry.contributions ?? 0,
           }))
           .filter((entry) => Boolean(entry.login && entry.avatar_url));
-        const main = mapped.find((entry) => entry.login.toLowerCase() === "dricotec");
-        const others = mapped.filter((entry) => entry.login.toLowerCase() !== "dricotec");
+        const main = mapped.find(
+          (entry) => entry.login.toLowerCase() === "dricotec",
+        );
+        const others = mapped.filter(
+          (entry) => entry.login.toLowerCase() !== "dricotec",
+        );
         setCredits(main ? [main, ...others] : others);
       })
       .catch(() => {
@@ -1532,14 +1179,18 @@ const App = () => {
       map.set(key, list);
     });
     map.forEach((list) =>
-      list.sort((a, b) => (a.min_float ?? 0) - (b.min_float ?? 0))
+      list.sort((a, b) => (a.min_float ?? 0) - (b.min_float ?? 0)),
     );
     return map;
   }, [allSkins]);
 
   const librarySkins = useMemo(() => {
     return Array.from(skinGroups.values()).map((list) => {
-      return list.find((skin) => skin.wear?.name?.toLowerCase().includes("factory")) ?? list[0];
+      return (
+        list.find((skin) =>
+          skin.wear?.name?.toLowerCase().includes("factory"),
+        ) ?? list[0]
+      );
     });
   }, [skinGroups]);
 
@@ -1558,15 +1209,21 @@ const App = () => {
   const isGlove = gloveDefIndexSet.has(selectedDefIndex);
   const isSkinItem = isWeapon || isKnife || isGlove;
   const isStickerItem = selectedDefIndex === STICKER_DEF_INDEX;
-  const selectedAgent = selectedItem ? agentsIndex.get(selectedItem.def_index) : null;
-  const selectedMusicKit = selectedItem ? getMusicKitForItem(selectedItem) : null;
+  const selectedAgent = selectedItem
+    ? agentsIndex.get(selectedItem.def_index)
+    : null;
+  const selectedMusicKit = selectedItem
+    ? getMusicKitForItem(selectedItem)
+    : null;
   const selectedCollectible = selectedItem
-    ? collectiblesByDefIndex.get(selectedItem.def_index) ?? null
+    ? (collectiblesByDefIndex.get(selectedItem.def_index) ?? null)
     : null;
   const stickerKit = selectedItem?.attributes["113"]?.trim() ?? "";
   const stickerInfo = stickerKit ? stickersByIndex.get(stickerKit) : undefined;
   const isSticker = isStickerItem && Boolean(stickerKit);
-  const wearValue = selectedItem ? getWearValue(selectedItem.attributes["8"]) : 0;
+  const wearValue = selectedItem
+    ? getWearValue(selectedItem.attributes["8"])
+    : 0;
   const wearLabel = getWearLabel(wearValue);
   const wearColor = getWearColor(wearValue);
   const defIndexLabel = defIndexLabels.get(selectedDefIndex);
@@ -1594,8 +1251,10 @@ const App = () => {
       } else if (activeFilter === "agents") {
         baseMatch = agentsIndex.has(item.def_index);
       }
-      const matchesRarity = inventoryRarity === "Any" || item.rarity === inventoryRarity;
-      const matchesQuality = inventoryQuality === "Any" || item.quality === inventoryQuality;
+      const matchesRarity =
+        inventoryRarity === "Any" || item.rarity === inventoryRarity;
+      const matchesQuality =
+        inventoryQuality === "Any" || item.quality === inventoryQuality;
       const equippedKeys = Object.keys(item.equipped_state ?? {});
       const matchesEquipped =
         inventoryEquipped === "all" ||
@@ -1614,7 +1273,7 @@ const App = () => {
       const skinMatch = findSkinMatch(item, skinsByPaintIndex, wear);
       const sticker =
         item.def_index === STICKER_DEF_INDEX
-          ? stickersByIndex.get(item.attributes["113"]?.trim() ?? "") ?? null
+          ? (stickersByIndex.get(item.attributes["113"]?.trim() ?? "") ?? null)
           : null;
       const musicKit = getMusicKitForItem(item);
       const collectible = collectiblesByDefIndex.get(item.def_index) ?? null;
@@ -1625,7 +1284,7 @@ const App = () => {
         agent,
         sticker,
         musicKit,
-        collectible
+        collectible,
       );
       return (
         item.def_index.includes(term) ||
@@ -1644,10 +1303,13 @@ const App = () => {
     baseWeaponIndex,
     agentsIndex,
     collectiblesByDefIndex,
-    musicKitsByDefIndex
+    musicKitsByDefIndex,
   ]);
 
-  const totalInventoryPages = Math.max(1, Math.ceil(filteredItems.length / INVENTORY_PAGE_SIZE));
+  const totalInventoryPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / INVENTORY_PAGE_SIZE),
+  );
   const pagedItems = useMemo(() => {
     const start = (inventoryPage - 1) * INVENTORY_PAGE_SIZE;
     return filteredItems.slice(start, start + INVENTORY_PAGE_SIZE);
@@ -1655,7 +1317,14 @@ const App = () => {
 
   useEffect(() => {
     setInventoryPage(1);
-  }, [search, activeFilter, inventoryRarity, inventoryQuality, inventoryEquipped, items.length]);
+  }, [
+    search,
+    activeFilter,
+    inventoryRarity,
+    inventoryQuality,
+    inventoryEquipped,
+    items.length,
+  ]);
 
   useEffect(() => {
     const handleClose = () => setContextMenu(null);
@@ -1682,7 +1351,10 @@ const App = () => {
 
   const handleSave = async () => {
     const content = serializeInventory(inventoryDoc);
-    const result = await window.inventoryApi.saveInventory({ filePath: filePath ?? undefined, content });
+    const result = await window.inventoryApi.saveInventory({
+      filePath: filePath ?? undefined,
+      content,
+    });
     if (!result) return;
     setFilePath(result.filePath);
     setStatus("Inventory saved.");
@@ -1690,12 +1362,12 @@ const App = () => {
 
   const handleAdd = () => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
   };
@@ -1710,7 +1382,7 @@ const App = () => {
   const updateItem = (updated: InventoryItem) => {
     setInventoryDoc({
       ...inventoryDoc,
-      items: items.map((item) => (item.id === updated.id ? updated : item))
+      items: items.map((item) => (item.id === updated.id ? updated : item)),
     });
   };
 
@@ -1723,7 +1395,10 @@ const App = () => {
     }
   };
 
-  const toggleLibrarySelection = (key: string, entry: LibrarySelectionEntry) => {
+  const toggleLibrarySelection = (
+    key: string,
+    entry: LibrarySelectionEntry,
+  ) => {
     setLibrarySelection((prev) => {
       if (prev[key]) {
         const next = { ...prev };
@@ -1738,7 +1413,9 @@ const App = () => {
     const selected = Object.values(librarySelection);
     if (selected.length === 0) return;
     setLibraryAddProgress({ total: selected.length, current: 0 });
-    setStatus(`Adding ${selected.length} item${selected.length === 1 ? "" : "s"}...`);
+    setStatus(
+      `Adding ${selected.length} item${selected.length === 1 ? "" : "s"}...`,
+    );
 
     let nextId =
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
@@ -1751,7 +1428,7 @@ const App = () => {
         const label = getSkinDisplayName(entry.item.name) || entry.item.name;
         const input = window.prompt(
           `Wear for ${label} (0-1). Leave blank for random.`,
-          ""
+          "",
         );
         if (input === null) {
           setStatus("Multi-add canceled.");
@@ -1760,7 +1437,11 @@ const App = () => {
         const trimmed = input.trim();
         const wearFloat = trimmed ? Number(trimmed) : null;
         const wearOverride =
-          trimmed && Number.isNaN(wearFloat) ? null : wearFloat != null ? clampWear(wearFloat) : null;
+          trimmed && Number.isNaN(wearFloat)
+            ? null
+            : wearFloat != null
+              ? clampWear(wearFloat)
+              : null;
         if (trimmed && Number.isNaN(wearFloat)) {
           setStatus(`Invalid wear for ${label}; using random.`);
         }
@@ -1774,13 +1455,13 @@ const App = () => {
           wearOverride != null
             ? wearOverride
             : wearRange
-            ? randomBetween(wearRange[0], wearRange[1])
-            : getRandomFloatForSkin(entry.item);
+              ? randomBetween(wearRange[0], wearRange[1])
+              : getRandomFloatForSkin(entry.item);
         newItem.attributes = {
           ...newItem.attributes,
           "6": entry.item.paint_index,
           "7": getRandomPatternTemplate(),
-          "8": wearFloatFinal.toFixed(6)
+          "8": wearFloatFinal.toFixed(6),
         };
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
@@ -1806,9 +1487,16 @@ const App = () => {
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
         newItem.quality = DEFAULT_QUALITY_ID;
-      } else if (entry.kind === "case" || entry.kind === "key" || entry.kind === "vanilla") {
+      } else if (
+        entry.kind === "case" ||
+        entry.kind === "key" ||
+        entry.kind === "vanilla"
+      ) {
         newItem = getDefaultItem(String(nextId++));
-        newItem.def_index = normalizeDefIndex(entry.item.def_index, newItem.def_index);
+        newItem.def_index = normalizeDefIndex(
+          entry.item.def_index,
+          newItem.def_index,
+        );
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
         newItem.quality = DEFAULT_QUALITY_ID;
@@ -1863,7 +1551,8 @@ const App = () => {
     const attributes = { ...selectedItem.attributes };
     const cleanedValue = value.trim();
     if (cleanedValue) {
-      attributes[attrId] = attrId === "6" ? normalizePaintIndex(cleanedValue) : cleanedValue;
+      attributes[attrId] =
+        attrId === "6" ? normalizePaintIndex(cleanedValue) : cleanedValue;
     } else {
       delete attributes[attrId];
     }
@@ -1904,7 +1593,7 @@ const App = () => {
   const preview =
     skinMatchWithImage ??
     selectedAgent ??
-    (isStickerItem ? stickerInfo ?? null : null) ??
+    (isStickerItem ? (stickerInfo ?? null) : null) ??
     selectedMusicKit ??
     selectedCollectible;
   const previewImage = selectedItem
@@ -1915,7 +1604,7 @@ const App = () => {
         crateIndex,
         keyIndex,
         skinMatchWithImage,
-        selectedAgent
+        selectedAgent,
       )
     : "";
   const livePreviewImage = getLiveImageSrc(previewImage, inventoryImageNonce);
@@ -1933,7 +1622,7 @@ const App = () => {
         selectedAgent,
         stickerInfo ?? null,
         selectedMusicKit,
-        selectedCollectible
+        selectedCollectible,
       )
     : "";
 
@@ -1948,44 +1637,79 @@ const App = () => {
     : "";
 
   const getRarityColor = (rarity?: { name?: string; color?: string }) =>
-    rarity?.color ?? (rarity?.name ? rarityPalette[rarity.name] : undefined) ?? "#3a3f4f";
+    rarity?.color ??
+    (rarity?.name ? rarityPalette[rarity.name] : undefined) ??
+    "#3a3f4f";
 
   const isPopularEntry = (name: string, rarityName?: string) => {
     const lowered = name.toLowerCase();
-    if (rarityName && ["Covert", "Classified", "Contraband", "Master", "Superior"].includes(rarityName)) {
+    if (
+      rarityName &&
+      ["Covert", "Classified", "Contraband", "Master", "Superior"].includes(
+        rarityName,
+      )
+    ) {
       return true;
     }
-    return ["doppler", "gamma", "fade", "marble", "sapphire", "ruby", "emerald"].some((token) =>
-      lowered.includes(token)
-    );
+    return [
+      "doppler",
+      "gamma",
+      "fade",
+      "marble",
+      "sapphire",
+      "ruby",
+      "emerald",
+    ].some((token) => lowered.includes(token));
   };
 
   const inventoryStats = useMemo(() => {
     const total = items.length;
-    const weapons = items.filter((item) => weaponDefIndexSet.has(item.def_index)).length;
-    const knives = items.filter((item) => knifeDefIndexSet.has(item.def_index)).length;
-    const gloves = items.filter((item) => gloveDefIndexSet.has(item.def_index)).length;
-    const skinned = items.filter((item) => Boolean(item.attributes["6"]?.trim())).length;
-    const stickers = items.filter((item) => item.def_index === STICKER_DEF_INDEX).length;
-    const agentsCount = items.filter((item) => agentsIndex.has(item.def_index)).length;
+    const weapons = items.filter((item) =>
+      weaponDefIndexSet.has(item.def_index),
+    ).length;
+    const knives = items.filter((item) =>
+      knifeDefIndexSet.has(item.def_index),
+    ).length;
+    const gloves = items.filter((item) =>
+      gloveDefIndexSet.has(item.def_index),
+    ).length;
+    const skinned = items.filter((item) =>
+      Boolean(item.attributes["6"]?.trim()),
+    ).length;
+    const stickers = items.filter(
+      (item) => item.def_index === STICKER_DEF_INDEX,
+    ).length;
+    const agentsCount = items.filter((item) =>
+      agentsIndex.has(item.def_index),
+    ).length;
     const cases = items.filter((item) => crateIndex.has(item.def_index)).length;
     const keys = items.filter((item) => keyIndex.has(item.def_index)).length;
-    return { total, weapons, knives, gloves, skinned, stickers, agentsCount, cases, keys };
+    return {
+      total,
+      weapons,
+      knives,
+      gloves,
+      skinned,
+      stickers,
+      agentsCount,
+      cases,
+      keys,
+    };
   }, [items, agentsIndex, crateIndex, keyIndex]);
 
   const handleDuplicate = () => {
     if (!selectedItem) return;
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const clone: InventoryItem = {
       ...selectedItem,
       id: nextId,
-      attributes: { ...selectedItem.attributes }
+      attributes: { ...selectedItem.attributes },
     };
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, clone]
+      items: [...items, clone],
     });
     setSelectedId(nextId);
     setStatus(`Duplicated item ${selectedItem.id}.`);
@@ -2003,16 +1727,23 @@ const App = () => {
       return;
     }
     const wearRange = getWearRangeFromName(wearLabel);
-    const nextFloat = wearRange ? randomBetween(wearRange[0], wearRange[1]) : Math.random();
+    const nextFloat = wearRange
+      ? randomBetween(wearRange[0], wearRange[1])
+      : Math.random();
     updateAttribute("8", clampWear(nextFloat).toFixed(6));
   };
 
-  const createItemFromSkin = (skin: SkinItem, wearRangeOverride?: readonly [number, number] | null) => {
+  const createItemFromSkin = (
+    skin: SkinItem,
+    wearRangeOverride?: readonly [number, number] | null,
+  ) => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
-    const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : newItem.def_index;
+    const weaponId = skin.weapon?.weapon_id
+      ? String(skin.weapon.weapon_id)
+      : newItem.def_index;
     newItem.def_index = weaponId;
     const wearRange = wearRangeOverride ?? getWearRangeForSkin(skin);
     const wearFloat = wearRange
@@ -2022,7 +1753,7 @@ const App = () => {
       ...newItem.attributes,
       "6": skin.paint_index,
       "7": getRandomPatternTemplate(),
-      "8": wearFloat.toFixed(6)
+      "8": wearFloat.toFixed(6),
     };
     const rarityId = getRarityIdFromName(skin.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
@@ -2038,7 +1769,7 @@ const App = () => {
     applyKnifeGloveDefaults(newItem, weaponId);
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added ${skin.name}.`);
@@ -2062,7 +1793,7 @@ const App = () => {
       return;
     }
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
     newItem.def_index = STICKER_DEF_INDEX;
@@ -2071,7 +1802,7 @@ const App = () => {
     newItem.quality = DEFAULT_QUALITY_ID;
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added sticker item: ${sticker.name}.`);
@@ -2079,7 +1810,7 @@ const App = () => {
 
   const addAgentFromLibrary = (agent: AgentItem) => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
     newItem.def_index = normalizeDefIndex(agent.def_index, newItem.def_index);
@@ -2088,7 +1819,7 @@ const App = () => {
     newItem.quality = DEFAULT_QUALITY_ID;
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added ${agent.name}.`);
@@ -2096,17 +1827,20 @@ const App = () => {
 
   const addContainerFromLibrary = (container: ApiItem) => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = normalizeDefIndex(container.def_index, newItem.def_index);
+    newItem.def_index = normalizeDefIndex(
+      container.def_index,
+      newItem.def_index,
+    );
     const rarityId = getRarityIdFromName(container.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;
     applyKnifeGloveDefaults(newItem, newItem.def_index);
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added ${container.name ?? "Item"}.`);
@@ -2114,16 +1848,19 @@ const App = () => {
 
   const addCollectibleFromLibrary = (collectible: CollectibleItem) => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
-    newItem.def_index = normalizeDefIndex(collectible.def_index, newItem.def_index);
+    newItem.def_index = normalizeDefIndex(
+      collectible.def_index,
+      newItem.def_index,
+    );
     const rarityId = getRarityIdFromName(collectible.rarity?.name);
     newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
     newItem.quality = DEFAULT_QUALITY_ID;
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added ${collectible.name ?? "Collectible"}.`);
@@ -2131,7 +1868,7 @@ const App = () => {
 
   const addMusicKitFromLibrary = (kit: MusicKitItem) => {
     const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
     );
     const newItem = getDefaultItem(nextId);
     newItem.def_index = MUSIC_KIT_ITEM_DEF_INDEX;
@@ -2150,7 +1887,7 @@ const App = () => {
     }
     setInventoryDoc({
       ...inventoryDoc,
-      items: [...items, newItem]
+      items: [...items, newItem],
     });
     setSelectedId(nextId);
     setStatus(`Added ${kit.name ?? "Music Kit"}.`);
@@ -2158,7 +1895,8 @@ const App = () => {
 
   const libraryEntries = useMemo(() => {
     const term = librarySearch.trim().toLowerCase();
-    const matchesSearch = (text: string) => !term || text.toLowerCase().includes(term);
+    const matchesSearch = (text: string) =>
+      !term || text.toLowerCase().includes(term);
     const matchesPopularity = (name: string, rarityName?: string) =>
       libraryFilter === "all" || isPopularEntry(name, rarityName);
     const matchesRarity = (rarityName?: string) =>
@@ -2178,7 +1916,9 @@ const App = () => {
     };
     const matchesWeapon = (skin: SkinItem) => {
       if (libraryWeapon === "Any") return true;
-      const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : "";
+      const weaponId = skin.weapon?.weapon_id
+        ? String(skin.weapon.weapon_id)
+        : "";
       return weaponId === libraryWeapon;
     };
 
@@ -2199,14 +1939,30 @@ const App = () => {
     const skinEntries = librarySkins.filter((skin) => {
       if (!cs2Mode && isCs2SkinName(skin.name)) return false;
       if (!cs2Mode && isKukriSkinName(skin.name)) return false;
-      if (!(showAll || libraryTab === "skins" || libraryTab === "knives" || libraryTab === "gloves")) return false;
+      if (
+        !(
+          showAll ||
+          libraryTab === "skins" ||
+          libraryTab === "knives" ||
+          libraryTab === "gloves"
+        )
+      )
+        return false;
       if (!matchesPopularity(skin.name, skin.rarity?.name)) return false;
       if (!matchesRarity(skin.rarity?.name)) return false;
       if (!matchesQuality(skin)) return false;
       if (!matchesWeapon(skin)) return false;
-      const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : "";
-      if (libraryTab === "knives" && !knifeDefIndexSet.has(weaponId) && !isKnifeSkinName(skin.name)) return false;
-      if (libraryTab === "gloves" && !gloveDefIndexSet.has(weaponId)) return false;
+      const weaponId = skin.weapon?.weapon_id
+        ? String(skin.weapon.weapon_id)
+        : "";
+      if (
+        libraryTab === "knives" &&
+        !knifeDefIndexSet.has(weaponId) &&
+        !isKnifeSkinName(skin.name)
+      )
+        return false;
+      if (libraryTab === "gloves" && !gloveDefIndexSet.has(weaponId))
+        return false;
       const displayName = getSkinDisplayName(skin.name);
       return matchesSearch(`${displayName} ${skin.name} ${skin.paint_index}`);
     });
@@ -2250,9 +2006,12 @@ const App = () => {
       if (!(showAll || libraryTab === "collectibles")) return false;
       if (isPremierCollectible(collectible)) return false;
       if (!cs2Mode && isCs2Collectible(collectible)) return false;
-      if (!matchesPopularity(collectible.name ?? "", collectible.rarity?.name)) return false;
+      if (!matchesPopularity(collectible.name ?? "", collectible.rarity?.name))
+        return false;
       if (!matchesRarity(collectible.rarity?.name)) return false;
-      return matchesSearch(`${collectible.name ?? ""} ${collectible.def_index ?? ""}`);
+      return matchesSearch(
+        `${collectible.name ?? ""} ${collectible.def_index ?? ""}`,
+      );
     });
 
     return {
@@ -2264,7 +2023,7 @@ const App = () => {
       caseEntries,
       keyEntries,
       musicKitEntries,
-      collectibleEntries
+      collectibleEntries,
     };
   }, [
     libraryTab,
@@ -2280,7 +2039,7 @@ const App = () => {
     crateItems,
     keyItems,
     musicKitItems,
-    collectibleItems
+    collectibleItems,
   ]);
 
   const {
@@ -2292,30 +2051,13 @@ const App = () => {
     caseEntries,
     keyEntries,
     musicKitEntries,
-    collectibleEntries
+    collectibleEntries,
   } = libraryEntries;
 
   const selectedLibraryCount = Object.keys(librarySelection).length;
 
   return (
     <div className="app">
-      <div className="titlebar">
-        <div className="titlebar__drag">CS:GO Inventory Editor (by drico)</div>
-        <div className="titlebar__controls">
-          <button className="titlebar__btn" onClick={() => window.inventoryApi.minimizeWindow()}>
-            —
-          </button>
-          <button
-            className="titlebar__btn"
-            onClick={() => window.inventoryApi.toggleMaximizeWindow()}
-          >
-            ☐
-          </button>
-          <button className="titlebar__btn titlebar__btn--close" onClick={() => window.inventoryApi.closeWindow()}>
-            ✕
-          </button>
-        </div>
-      </div>
       <div className="app__body">
         <aside className="sidebar">
           <div className="sidebar__title">Menu</div>
@@ -2349,199 +2091,247 @@ const App = () => {
             <div className="home-grid">
               <div className="home-left">
                 <section className="panel panel--list transition-all duration-200 inv-category Active">
-          <div className="panel__header content-navbar">
-            <h2>Inventory</h2>
-            <span className="hint">{dataLoading ? "Loading library data…" : ""}</span>
-          </div>
-          <div className="dock-bar">
-            <button className="btn" onClick={handleLoad}>
-              Load
-            </button>
-            <button className="btn btn--primary" onClick={handleSave}>
-              Save
-            </button>
-            <button className="btn" onClick={handleAdd}>
-              Add
-            </button>
-            <button className="btn btn--danger" onClick={handleRemove} disabled={!selectedItem}>
-              Remove
-            </button>
-          </div>
-          <div className="inventory-toolbar inv-category__list-container">
-            <div className="inv-search-navbar">
-              <input
-                className="input inv-search-textentry"
-                placeholder="Search your inventory"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-            <div className="filter-row">
-              {filterOptions.map((option) => (
-                <button
-                  key={option.id}
-                  className={`chip ${activeFilter === option.id ? "is-active" : ""}`}
-                  onClick={() => setActiveFilter(option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="inventory-advanced-filters">
-              <label>
-                Rarity
-                <select
-                  className="input"
-                  value={inventoryRarity}
-                  onChange={(event) => setInventoryRarity(event.target.value)}
-                >
-                  {inventoryRarityOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Quality
-                <select
-                  className="input"
-                  value={inventoryQuality}
-                  onChange={(event) => setInventoryQuality(event.target.value)}
-                >
-                  {inventoryQualityOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Equipped
-                <select
-                  className="input"
-                  value={inventoryEquipped}
-                  onChange={(event) =>
-                    setInventoryEquipped(event.target.value as InventoryEquippedFilter)
-                  }
-                >
-                  {inventoryEquippedOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-          <div className="inventory-grid">
-            {pagedItems.map((item) => {
-              const agent = agentsIndex.get(item.def_index) ?? null;
-              const wear = getWearValue(item.attributes["8"]);
-              const match = findSkinMatch(item, skinsByPaintIndex, wear);
-              const sticker =
-                item.def_index === STICKER_DEF_INDEX
-                  ? stickersByIndex.get(item.attributes["113"]?.trim() ?? "") ?? null
-                  : null;
-              const equippedKeys = Object.keys(item.equipped_state ?? {});
-              const isEquipped = equippedKeys.length > 0;
-              const isCtEquipped = equippedKeys.includes("2");
-              const isTEquipped = equippedKeys.includes("3");
-              const musicKit = getMusicKitForItem(item);
-              const collectible = collectiblesByDefIndex.get(item.def_index) ?? null;
-              const rarityName =
-                match?.rarity?.name ??
-                agent?.rarity?.name ??
-                musicKit?.rarity?.name ??
-                collectible?.rarity?.name ??
-                undefined;
-              const rarityColor = getRarityColor(
-                match?.rarity ??
-                  agent?.rarity ??
-                  musicKit?.rarity ??
-                  collectible?.rarity ??
-                  (rarityName ? { name: rarityName } : undefined)
-              );
-              const name = getDisplayName(
-                item,
-                baseWeaponIndex,
-                match,
-                agent,
-                sticker,
-                musicKit,
-                collectible
-              );
-              const image = getPreviewImage(
-                item,
-                match ?? agent ?? musicKit ?? collectible,
-                baseWeaponIndex,
-                crateIndex,
-                keyIndex,
-                match,
-                agent
-              );
-              const liveImage = getLiveImageSrc(image, inventoryImageNonce);
-              return (
-                <button
-                  key={item.id}
-                  className={`library-card item-tile inventory-card ${
-                    item.id === selectedId ? "is-selected" : ""
-                  }`}
-                  onClick={() => setSelectedId(item.id)}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setSelectedId(item.id);
-                    setContextMenu({ x: event.clientX, y: event.clientY, itemId: item.id });
-                  }}
-                >
-                  <div className="library-card__thumb item-tile__bg">
-                    <CachedImage src={liveImage} alt={name} className="item-tile__image" />
-                    {isEquipped && (
-                      <div className="item-tile__equipped" title="Equipped">
-                        <span
-                          className={`item-tile__equipped-dot item-tile__equipped-dot--ct ${
-                            isCtEquipped ? "is-active" : ""
-                          }`}
-                        />
-                        <span
-                          className={`item-tile__equipped-dot item-tile__equipped-dot--t ${
-                            isTEquipped ? "is-active" : ""
-                          }`}
-                        />
-                      </div>
-                    )}
+                  <div className="panel__header content-navbar">
+                    <h2>Inventory</h2>
+                    <span className="hint">
+                      {dataLoading ? "Loading library data…" : ""}
+                    </span>
                   </div>
-                  <div className="rarity-bar" style={{ backgroundColor: rarityColor }} />
-                  <div className="library-card__meta">
-                    <strong className="item-tile__name">{name}</strong>
-                    <span className="item-tile__meta">ID {item.id}</span>
-                    <span className="item-tile__meta">def_index {item.def_index}</span>
+                  <div className="dock-bar">
+                    <button className="btn" onClick={handleLoad}>
+                      Load
+                    </button>
+                    <button className="btn btn--primary" onClick={handleSave}>
+                      Save
+                    </button>
+                    <button className="btn" onClick={handleAdd}>
+                      Add
+                    </button>
+                    <button
+                      className="btn btn--danger"
+                      onClick={handleRemove}
+                      disabled={!selectedItem}
+                    >
+                      Remove
+                    </button>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="inventory-pagination">
-            <button
-              className="btn btn--ghost"
-              type="button"
-              disabled={inventoryPage <= 1}
-              onClick={() => setInventoryPage((page) => Math.max(1, page - 1))}
-            >
-              ← Prev
-            </button>
-            <span className="pagination__meta">
-              Page {inventoryPage} of {totalInventoryPages}
-            </span>
-            <button
-              className="btn btn--ghost"
-              type="button"
-              disabled={inventoryPage >= totalInventoryPages}
-              onClick={() => setInventoryPage((page) => Math.min(totalInventoryPages, page + 1))}
-            >
-              Next →
-            </button>
-          </div>
+                  <div className="inventory-toolbar inv-category__list-container">
+                    <div className="inv-search-navbar">
+                      <input
+                        className="input inv-search-textentry"
+                        placeholder="Search your inventory"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                      />
+                    </div>
+                    <div className="filter-row">
+                      {filterOptions.map((option) => (
+                        <button
+                          key={option.id}
+                          className={`chip ${activeFilter === option.id ? "is-active" : ""}`}
+                          onClick={() => setActiveFilter(option.id)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="inventory-advanced-filters">
+                      <label>
+                        Rarity
+                        <select
+                          className="input"
+                          value={inventoryRarity}
+                          onChange={(event) =>
+                            setInventoryRarity(event.target.value)
+                          }
+                        >
+                          {inventoryRarityOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Quality
+                        <select
+                          className="input"
+                          value={inventoryQuality}
+                          onChange={(event) =>
+                            setInventoryQuality(event.target.value)
+                          }
+                        >
+                          {inventoryQualityOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Equipped
+                        <select
+                          className="input"
+                          value={inventoryEquipped}
+                          onChange={(event) =>
+                            setInventoryEquipped(
+                              event.target.value as InventoryEquippedFilter,
+                            )
+                          }
+                        >
+                          {inventoryEquippedOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="inventory-grid">
+                    {pagedItems.map((item) => {
+                      const agent = agentsIndex.get(item.def_index) ?? null;
+                      const wear = getWearValue(item.attributes["8"]);
+                      const match = findSkinMatch(
+                        item,
+                        skinsByPaintIndex,
+                        wear,
+                      );
+                      const sticker =
+                        item.def_index === STICKER_DEF_INDEX
+                          ? (stickersByIndex.get(
+                              item.attributes["113"]?.trim() ?? "",
+                            ) ?? null)
+                          : null;
+                      const equippedKeys = Object.keys(
+                        item.equipped_state ?? {},
+                      );
+                      const isEquipped = equippedKeys.length > 0;
+                      const isCtEquipped = equippedKeys.includes("2");
+                      const isTEquipped = equippedKeys.includes("3");
+                      const musicKit = getMusicKitForItem(item);
+                      const collectible =
+                        collectiblesByDefIndex.get(item.def_index) ?? null;
+                      const rarityName =
+                        match?.rarity?.name ??
+                        agent?.rarity?.name ??
+                        musicKit?.rarity?.name ??
+                        collectible?.rarity?.name ??
+                        undefined;
+                      const rarityColor = getRarityColor(
+                        match?.rarity ??
+                          agent?.rarity ??
+                          musicKit?.rarity ??
+                          collectible?.rarity ??
+                          (rarityName ? { name: rarityName } : undefined),
+                      );
+                      const name = getDisplayName(
+                        item,
+                        baseWeaponIndex,
+                        match,
+                        agent,
+                        sticker,
+                        musicKit,
+                        collectible,
+                      );
+                      const image = getPreviewImage(
+                        item,
+                        match ?? agent ?? musicKit ?? collectible,
+                        baseWeaponIndex,
+                        crateIndex,
+                        keyIndex,
+                        match,
+                        agent,
+                      );
+                      const liveImage = getLiveImageSrc(
+                        image,
+                        inventoryImageNonce,
+                      );
+                      return (
+                        <button
+                          key={item.id}
+                          className={`library-card item-tile inventory-card ${
+                            item.id === selectedId ? "is-selected" : ""
+                          }`}
+                          onClick={() => setSelectedId(item.id)}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            setSelectedId(item.id);
+                            setContextMenu({
+                              x: event.clientX,
+                              y: event.clientY,
+                              itemId: item.id,
+                            });
+                          }}
+                        >
+                          <div className="library-card__thumb item-tile__bg">
+                            <CachedImage
+                              src={liveImage}
+                              alt={name}
+                              className="item-tile__image"
+                            />
+                            {isEquipped && (
+                              <div
+                                className="item-tile__equipped"
+                                title="Equipped"
+                              >
+                                <span
+                                  className={`item-tile__equipped-dot item-tile__equipped-dot--ct ${
+                                    isCtEquipped ? "is-active" : ""
+                                  }`}
+                                />
+                                <span
+                                  className={`item-tile__equipped-dot item-tile__equipped-dot--t ${
+                                    isTEquipped ? "is-active" : ""
+                                  }`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div
+                            className="rarity-bar"
+                            style={{ backgroundColor: rarityColor }}
+                          />
+                          <div className="library-card__meta">
+                            <strong className="item-tile__name">{name}</strong>
+                            <span className="item-tile__meta">
+                              ID {item.id}
+                            </span>
+                            <span className="item-tile__meta">
+                              def_index {item.def_index}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="inventory-pagination">
+                    <button
+                      className="btn btn--ghost"
+                      type="button"
+                      disabled={inventoryPage <= 1}
+                      onClick={() =>
+                        setInventoryPage((page) => Math.max(1, page - 1))
+                      }
+                    >
+                      ← Prev
+                    </button>
+                    <span className="pagination__meta">
+                      Page {inventoryPage} of {totalInventoryPages}
+                    </span>
+                    <button
+                      className="btn btn--ghost"
+                      type="button"
+                      disabled={inventoryPage >= totalInventoryPages}
+                      onClick={() =>
+                        setInventoryPage((page) =>
+                          Math.min(totalInventoryPages, page + 1),
+                        )
+                      }
+                    >
+                      Next →
+                    </button>
+                  </div>
                 </section>
               </div>
             </div>
@@ -2551,7 +2341,9 @@ const App = () => {
             <section className="panel panel--library transition-all duration-200 inv-category Active">
               <div className="panel__header content-navbar">
                 <h2>Inventory Library</h2>
-                <span className="hint">{libraryLoading ? "Loading library…" : ""}</span>
+                <span className="hint">
+                  {libraryLoading ? "Loading library…" : ""}
+                </span>
                 <div className="library-tabs content-navbar__tabs">
                   {libraryTypeOptions.map((tab) => (
                     <button
@@ -2562,20 +2354,21 @@ const App = () => {
                       {tab === "vanilla"
                         ? "Vanilla"
                         : tab === "all"
-                        ? "All"
-                        : tab === "cases"
-                        ? "Cases"
-                        : tab === "keys"
-                        ? "Keys"
-                        : tab === "music"
-                        ? "Music Kits"
-                        : tab === "collectibles"
-                        ? "Collectibles"
-                        : tab === "knives"
-                        ? "Knives"
-                        : tab === "gloves"
-                        ? "Gloves"
-                        : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                          ? "All"
+                          : tab === "cases"
+                            ? "Cases"
+                            : tab === "keys"
+                              ? "Keys"
+                              : tab === "music"
+                                ? "Music Kits"
+                                : tab === "collectibles"
+                                  ? "Collectibles"
+                                  : tab === "knives"
+                                    ? "Knives"
+                                    : tab === "gloves"
+                                      ? "Gloves"
+                                      : tab.charAt(0).toUpperCase() +
+                                        tab.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -2598,28 +2391,35 @@ const App = () => {
                     />
                     CS2 Mode
                   </label>
-                  <span className="hint">CS2 items are hidden in CSGO mode.</span>
+                  <span className="hint">
+                    CS2 items are hidden in CSGO mode.
+                  </span>
                 </div>
                 <div className="library-bulk">
                   <label className="checkbox">
                     <input
                       type="checkbox"
                       checked={libraryMultiSelect}
-                      onChange={(event) => setLibraryMultiSelect(event.target.checked)}
+                      onChange={(event) =>
+                        setLibraryMultiSelect(event.target.checked)
+                      }
                     />
                     Multi-add
                   </label>
                   <button
                     className="btn btn--ghost"
                     type="button"
-                    disabled={!selectedLibraryCount || Boolean(libraryAddProgress)}
+                    disabled={
+                      !selectedLibraryCount || Boolean(libraryAddProgress)
+                    }
                     onClick={addSelectedLibraryItems}
                   >
                     Add selected ({selectedLibraryCount})
                   </button>
                   {libraryAddProgress && (
                     <span className="hint">
-                      Adding {libraryAddProgress.current}/{libraryAddProgress.total}…
+                      Adding {libraryAddProgress.current}/
+                      {libraryAddProgress.total}…
                     </span>
                   )}
                   {libraryMultiSelect && selectedLibraryCount > 0 && (
@@ -2635,12 +2435,14 @@ const App = () => {
                 <div className="filter-row">
                   {[
                     { id: "all", label: "All" },
-                    { id: "popular", label: "Popular" }
+                    { id: "popular", label: "Popular" },
                   ].map((option) => (
                     <button
                       key={option.id}
                       className={`chip ${libraryFilter === option.id ? "is-active" : ""}`}
-                      onClick={() => setLibraryFilter(option.id as typeof libraryFilter)}
+                      onClick={() =>
+                        setLibraryFilter(option.id as typeof libraryFilter)
+                      }
                     >
                       {option.label}
                     </button>
@@ -2666,7 +2468,9 @@ const App = () => {
                     <select
                       className="input"
                       value={libraryQuality}
-                      onChange={(event) => setLibraryQuality(event.target.value)}
+                      onChange={(event) =>
+                        setLibraryQuality(event.target.value)
+                      }
                     >
                       {libraryQualityOptions.map((option) => (
                         <option key={option} value={option}>
@@ -2683,7 +2487,11 @@ const App = () => {
                       onChange={(event) => setLibraryWeapon(event.target.value)}
                     >
                       <option value="Any">Any</option>
-                      {[...weaponDefIndexes, ...knifeDefIndexes, ...gloveDefIndexes].map((weapon) => (
+                      {[
+                        ...weaponDefIndexes,
+                        ...knifeDefIndexes,
+                        ...gloveDefIndexes,
+                      ].map((weapon) => (
                         <option key={weapon.id} value={weapon.id}>
                           {weapon.name}
                         </option>
@@ -2697,7 +2505,10 @@ const App = () => {
                   const selectionKey = `vanilla:${weapon.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "vanilla", item: weapon });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "vanilla",
+                      item: weapon,
+                    });
                   const knifeRarityColor = getRarityColor({ name: "Covert" });
                   return (
                     <div
@@ -2708,7 +2519,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(weapon)
                         }
                       >
                         +
@@ -2716,7 +2529,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(weapon)
                         }
                       >
                         <CachedImage
@@ -2725,11 +2540,18 @@ const App = () => {
                           className="item-tile__image"
                         />
                       </div>
-                      <div className="rarity-bar" style={{ backgroundColor: knifeRarityColor }} />
+                      <div
+                        className="rarity-bar"
+                        style={{ backgroundColor: knifeRarityColor }}
+                      />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{weapon.name ?? "Weapon"}</strong>
+                        <strong className="item-tile__name">
+                          {weapon.name ?? "Weapon"}
+                        </strong>
                         {weapon.def_index && (
-                          <span className="item-tile__meta">def_index {weapon.def_index}</span>
+                          <span className="item-tile__meta">
+                            def_index {weapon.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -2739,7 +2561,10 @@ const App = () => {
                   const selectionKey = `vanilla:${weapon.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "vanilla", item: weapon });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "vanilla",
+                      item: weapon,
+                    });
                   return (
                     <div
                       key={weapon.id}
@@ -2749,7 +2574,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(weapon)
                         }
                       >
                         +
@@ -2757,7 +2584,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(weapon)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(weapon)
                         }
                       >
                         <CachedImage
@@ -2768,9 +2597,13 @@ const App = () => {
                       </div>
                       <div className="rarity-bar" />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{weapon.name ?? "Weapon"}</strong>
+                        <strong className="item-tile__name">
+                          {weapon.name ?? "Weapon"}
+                        </strong>
                         {weapon.def_index && (
-                          <span className="item-tile__meta">def_index {weapon.def_index}</span>
+                          <span className="item-tile__meta">
+                            def_index {weapon.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -2780,9 +2613,16 @@ const App = () => {
                   const selectionKey = `skin:${skin.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "skin", item: skin });
-                  const weaponId = skin.weapon?.weapon_id ? String(skin.weapon.weapon_id) : "";
-                  const isKnifeEntry = knifeDefIndexSet.has(weaponId) || isKnifeSkinName(skin.name);
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "skin",
+                      item: skin,
+                    });
+                  const weaponId = skin.weapon?.weapon_id
+                    ? String(skin.weapon.weapon_id)
+                    : "";
+                  const isKnifeEntry =
+                    knifeDefIndexSet.has(weaponId) ||
+                    isKnifeSkinName(skin.name);
                   const rarityColor = isKnifeEntry
                     ? getRarityColor({ name: "Covert" })
                     : getRarityColor(skin.rarity);
@@ -2795,7 +2635,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : openWearPicker(skin)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : openWearPicker(skin)
                         }
                       >
                         +
@@ -2803,7 +2645,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : openWearPicker(skin)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : openWearPicker(skin)
                         }
                       >
                         <CachedImage
@@ -2820,7 +2664,9 @@ const App = () => {
                         <strong className="item-tile__name">
                           {getSkinDisplayName(skin.name) || skin.name}
                         </strong>
-                        <span className="item-tile__meta">Paint {skin.paint_index}</span>
+                        <span className="item-tile__meta">
+                          Paint {skin.paint_index}
+                        </span>
                       </div>
                     </div>
                   );
@@ -2829,7 +2675,10 @@ const App = () => {
                   const selectionKey = `sticker:${sticker.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "sticker", item: sticker });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "sticker",
+                      item: sticker,
+                    });
                   return (
                     <div
                       key={sticker.id}
@@ -2839,7 +2688,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : applyStickerFromLibrary(sticker)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : applyStickerFromLibrary(sticker)
                         }
                       >
                         +
@@ -2847,7 +2698,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : applyStickerFromLibrary(sticker)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : applyStickerFromLibrary(sticker)
                         }
                       >
                         <CachedImage
@@ -2858,8 +2711,12 @@ const App = () => {
                       </div>
                       <div className="rarity-bar" />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{sticker.name}</strong>
-                        <span className="item-tile__meta">Sticker {sticker.sticker_index}</span>
+                        <strong className="item-tile__name">
+                          {sticker.name}
+                        </strong>
+                        <span className="item-tile__meta">
+                          Sticker {sticker.sticker_index}
+                        </span>
                       </div>
                     </div>
                   );
@@ -2868,7 +2725,10 @@ const App = () => {
                   const selectionKey = `agent:${agent.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "agent", item: agent });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "agent",
+                      item: agent,
+                    });
                   return (
                     <div
                       key={agent.id}
@@ -2878,7 +2738,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addAgentFromLibrary(agent)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addAgentFromLibrary(agent)
                         }
                       >
                         +
@@ -2886,7 +2748,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addAgentFromLibrary(agent)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addAgentFromLibrary(agent)
                         }
                       >
                         <CachedImage
@@ -2897,11 +2761,17 @@ const App = () => {
                       </div>
                       <div
                         className="rarity-bar"
-                        style={{ backgroundColor: getRarityColor(agent.rarity) }}
+                        style={{
+                          backgroundColor: getRarityColor(agent.rarity),
+                        }}
                       />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{agent.name}</strong>
-                        <span className="item-tile__meta">def_index {agent.def_index}</span>
+                        <strong className="item-tile__name">
+                          {agent.name}
+                        </strong>
+                        <span className="item-tile__meta">
+                          def_index {agent.def_index}
+                        </span>
                       </div>
                     </div>
                   );
@@ -2910,7 +2780,10 @@ const App = () => {
                   const selectionKey = `case:${crate.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "case", item: crate });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "case",
+                      item: crate,
+                    });
                   return (
                     <div
                       key={crate.id}
@@ -2920,7 +2793,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(crate)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(crate)
                         }
                       >
                         +
@@ -2928,7 +2803,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(crate)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(crate)
                         }
                       >
                         <CachedImage
@@ -2939,12 +2816,18 @@ const App = () => {
                       </div>
                       <div
                         className="rarity-bar"
-                        style={{ backgroundColor: getRarityColor(crate.rarity) }}
+                        style={{
+                          backgroundColor: getRarityColor(crate.rarity),
+                        }}
                       />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{crate.name ?? "Case"}</strong>
+                        <strong className="item-tile__name">
+                          {crate.name ?? "Case"}
+                        </strong>
                         {crate.def_index && (
-                          <span className="item-tile__meta">def_index {crate.def_index}</span>
+                          <span className="item-tile__meta">
+                            def_index {crate.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -2954,7 +2837,10 @@ const App = () => {
                   const selectionKey = `key:${key.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "key", item: key });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "key",
+                      item: key,
+                    });
                   return (
                     <div
                       key={key.id}
@@ -2964,7 +2850,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(key)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(key)
                         }
                       >
                         +
@@ -2972,7 +2860,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addContainerFromLibrary(key)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addContainerFromLibrary(key)
                         }
                       >
                         <CachedImage
@@ -2986,9 +2876,13 @@ const App = () => {
                         style={{ backgroundColor: getRarityColor(key.rarity) }}
                       />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{key.name ?? "Key"}</strong>
+                        <strong className="item-tile__name">
+                          {key.name ?? "Key"}
+                        </strong>
                         {key.def_index && (
-                          <span className="item-tile__meta">def_index {key.def_index}</span>
+                          <span className="item-tile__meta">
+                            def_index {key.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -2998,7 +2892,10 @@ const App = () => {
                   const selectionKey = `music:${kit.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "music", item: kit });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "music",
+                      item: kit,
+                    });
                   return (
                     <div
                       key={kit.id}
@@ -3008,7 +2905,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addMusicKitFromLibrary(kit)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addMusicKitFromLibrary(kit)
                         }
                       >
                         +
@@ -3016,7 +2915,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addMusicKitFromLibrary(kit)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addMusicKitFromLibrary(kit)
                         }
                       >
                         <CachedImage
@@ -3030,9 +2931,13 @@ const App = () => {
                         style={{ backgroundColor: getRarityColor(kit.rarity) }}
                       />
                       <div className="library-card__meta">
-                        <strong className="item-tile__name">{kit.name ?? "Music Kit"}</strong>
+                        <strong className="item-tile__name">
+                          {kit.name ?? "Music Kit"}
+                        </strong>
                         {kit.def_index && (
-                          <span className="item-tile__meta">Kit {kit.def_index}</span>
+                          <span className="item-tile__meta">
+                            Kit {kit.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -3042,7 +2947,10 @@ const App = () => {
                   const selectionKey = `collectible:${collectible.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
                   const handleSelect = () =>
-                    toggleLibrarySelection(selectionKey, { kind: "collectible", item: collectible });
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "collectible",
+                      item: collectible,
+                    });
                   return (
                     <div
                       key={collectible.id}
@@ -3052,7 +2960,9 @@ const App = () => {
                         className="library-card__add"
                         type="button"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addCollectibleFromLibrary(collectible)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addCollectibleFromLibrary(collectible)
                         }
                       >
                         +
@@ -3060,7 +2970,9 @@ const App = () => {
                       <div
                         className="library-card__thumb item-tile__bg is-clickable"
                         onClick={() =>
-                          libraryMultiSelect ? handleSelect() : addCollectibleFromLibrary(collectible)
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addCollectibleFromLibrary(collectible)
                         }
                       >
                         <CachedImage
@@ -3071,14 +2983,18 @@ const App = () => {
                       </div>
                       <div
                         className="rarity-bar"
-                        style={{ backgroundColor: getRarityColor(collectible.rarity) }}
+                        style={{
+                          backgroundColor: getRarityColor(collectible.rarity),
+                        }}
                       />
                       <div className="library-card__meta">
                         <strong className="item-tile__name">
                           {collectible.name ?? "Collectible"}
                         </strong>
                         {collectible.def_index && (
-                          <span className="item-tile__meta">def_index {collectible.def_index}</span>
+                          <span className="item-tile__meta">
+                            def_index {collectible.def_index}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -3094,7 +3010,9 @@ const App = () => {
                 <span className="hint">Open-source contributors</span>
               </div>
               <div className="credits-panel">
-                {creditsLoading && <div className="hint">Loading contributors…</div>}
+                {creditsLoading && (
+                  <div className="hint">Loading contributors…</div>
+                )}
                 {creditsError && <div className="hint">{creditsError}</div>}
                 {!creditsLoading && !creditsError && credits.length === 0 && (
                   <div className="hint">No contributors found.</div>
@@ -3103,10 +3021,15 @@ const App = () => {
                   <>
                     {credits[0]?.login?.toLowerCase() === "dricotec" && (
                       <div className="credits-section">
-                        <div className="credits-section__title">Main Developer</div>
+                        <div className="credits-section__title">
+                          Main Developer
+                        </div>
                         <div className="credits-grid">
                           {credits
-                            .filter((entry) => entry.login.toLowerCase() === "dricotec")
+                            .filter(
+                              (entry) =>
+                                entry.login.toLowerCase() === "dricotec",
+                            )
                             .map((entry) => (
                               <a
                                 key={entry.login}
@@ -3129,7 +3052,9 @@ const App = () => {
                       <div className="credits-section__title">Contributors</div>
                       <div className="credits-grid">
                         {credits
-                          .filter((entry) => entry.login.toLowerCase() !== "dricotec")
+                          .filter(
+                            (entry) => entry.login.toLowerCase() !== "dricotec",
+                          )
                           .map((entry) => (
                             <a
                               key={entry.login}
@@ -3244,7 +3169,10 @@ const App = () => {
                 <h3>Inspect</h3>
                 <p>{displayName}</p>
               </div>
-              <button className="btn btn--ghost" onClick={() => setInspectOpen(false)}>
+              <button
+                className="btn btn--ghost"
+                onClick={() => setInspectOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -3253,28 +3181,44 @@ const App = () => {
                 <CachedImage
                   src={livePreviewImage}
                   alt={displayName || "Preview"}
-                  fallback={<div className="preview-placeholder">No image available</div>}
+                  fallback={
+                    <div className="preview-placeholder">
+                      No image available
+                    </div>
+                  }
                 />
               </div>
               <div className="details-preview__meta">
                 <h3>{displayName}</h3>
                 <p>def_index {selectedItem.def_index}</p>
                 {skinMatch?.wear?.name && <p>{skinMatch.wear.name}</p>}
-                <p>{previewRarityName ?? getOptionLabel(selectedItem.rarity, rarityOptions)}</p>
+                <p>
+                  {previewRarityName ??
+                    getOptionLabel(selectedItem.rarity, rarityOptions)}
+                </p>
               </div>
             </div>
           </div>
         </div>
       )}
       {attributesOpen && selectedItem && (
-        <div className="modal-backdrop" onClick={() => setAttributesOpen(false)}>
-          <div className="modal attributes-modal" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="modal-backdrop"
+          onClick={() => setAttributesOpen(false)}
+        >
+          <div
+            className="modal attributes-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="modal__header content-navbar inv-popup">
               <div>
                 <h3>Attributes</h3>
                 <p>{displayName}</p>
               </div>
-              <button className="btn btn--ghost" onClick={() => setAttributesOpen(false)}>
+              <button
+                className="btn btn--ghost"
+                onClick={() => setAttributesOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -3284,20 +3228,36 @@ const App = () => {
                   <CachedImage
                     src={livePreviewImage}
                     alt={displayName || "Preview"}
-                    fallback={<div className="preview-placeholder">No image available</div>}
+                    fallback={
+                      <div className="preview-placeholder">
+                        No image available
+                      </div>
+                    }
                   />
                 </div>
                 <div className="details-preview__meta">
                   <h3>{displayName}</h3>
                   <p>def_index {selectedItem.def_index}</p>
-                  {isSticker && <p>{stickerInfo?.name ?? `Sticker kit ${stickerKit}`}</p>}
+                  {isSticker && (
+                    <p>{stickerInfo?.name ?? `Sticker kit ${stickerKit}`}</p>
+                  )}
                   {defIndexLabel && (
                     <p>
-                      {isKnife ? "Knife" : isGlove ? "Glove" : isWeapon ? "Weapon" : "Item"}: {defIndexLabel}
+                      {isKnife
+                        ? "Knife"
+                        : isGlove
+                          ? "Glove"
+                          : isWeapon
+                            ? "Weapon"
+                            : "Item"}
+                      : {defIndexLabel}
                     </p>
                   )}
                   {skinMatch?.wear?.name && <p>{skinMatch.wear.name}</p>}
-                  <p>{previewRarityName ?? getOptionLabel(selectedItem.rarity, rarityOptions)}</p>
+                  <p>
+                    {previewRarityName ??
+                      getOptionLabel(selectedItem.rarity, rarityOptions)}
+                  </p>
                 </div>
               </div>
               <div className="form-grid">
@@ -3314,7 +3274,9 @@ const App = () => {
                   <input
                     className="input"
                     value={selectedItem.inventory}
-                    onChange={(event) => updateField("inventory", event.target.value)}
+                    onChange={(event) =>
+                      updateField("inventory", event.target.value)
+                    }
                   />
                 </label>
                 <label>
@@ -3322,7 +3284,9 @@ const App = () => {
                   <input
                     className="input"
                     value={selectedItem.def_index}
-                    onChange={(event) => updateField("def_index", event.target.value)}
+                    onChange={(event) =>
+                      updateField("def_index", event.target.value)
+                    }
                   />
                 </label>
                 <label>
@@ -3330,7 +3294,9 @@ const App = () => {
                   <input
                     className="input"
                     value={selectedItem.level}
-                    onChange={(event) => updateField("level", event.target.value)}
+                    onChange={(event) =>
+                      updateField("level", event.target.value)
+                    }
                   />
                 </label>
                 <label>
@@ -3338,15 +3304,21 @@ const App = () => {
                   <select
                     className="input"
                     value={selectedItem.quality}
-                    onChange={(event) => updateField("quality", event.target.value)}
+                    onChange={(event) =>
+                      updateField("quality", event.target.value)
+                    }
                   >
                     {qualityOptions.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
                     ))}
-                    {!qualityOptions.some((option) => option.id === selectedItem.quality) && (
-                      <option value={selectedItem.quality}>Custom ({selectedItem.quality})</option>
+                    {!qualityOptions.some(
+                      (option) => option.id === selectedItem.quality,
+                    ) && (
+                      <option value={selectedItem.quality}>
+                        Custom ({selectedItem.quality})
+                      </option>
                     )}
                   </select>
                 </label>
@@ -3355,15 +3327,21 @@ const App = () => {
                   <select
                     className="input"
                     value={selectedItem.rarity}
-                    onChange={(event) => updateField("rarity", event.target.value)}
+                    onChange={(event) =>
+                      updateField("rarity", event.target.value)
+                    }
                   >
                     {rarityOptions.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
                     ))}
-                    {!rarityOptions.some((option) => option.id === selectedItem.rarity) && (
-                      <option value={selectedItem.rarity}>Custom ({selectedItem.rarity})</option>
+                    {!rarityOptions.some(
+                      (option) => option.id === selectedItem.rarity,
+                    ) && (
+                      <option value={selectedItem.rarity}>
+                        Custom ({selectedItem.rarity})
+                      </option>
                     )}
                   </select>
                 </label>
@@ -3372,7 +3350,9 @@ const App = () => {
                   <input
                     className="input"
                     value={selectedItem.flags}
-                    onChange={(event) => updateField("flags", event.target.value)}
+                    onChange={(event) =>
+                      updateField("flags", event.target.value)
+                    }
                   />
                 </label>
                 <label>
@@ -3380,7 +3360,9 @@ const App = () => {
                   <input
                     className="input"
                     value={selectedItem.origin}
-                    onChange={(event) => updateField("origin", event.target.value)}
+                    onChange={(event) =>
+                      updateField("origin", event.target.value)
+                    }
                   />
                 </label>
               </div>
@@ -3393,7 +3375,9 @@ const App = () => {
                       <input
                         className="input"
                         value={finishCatalogValue}
-                        onChange={(event) => updateAttribute("6", event.target.value)}
+                        onChange={(event) =>
+                          updateAttribute("6", event.target.value)
+                        }
                       />
                     </label>
                     <label>
@@ -3401,15 +3385,21 @@ const App = () => {
                       <input
                         className="input"
                         value={selectedItem.attributes["7"] ?? ""}
-                        onChange={(event) => updateAttribute("7", event.target.value)}
+                        onChange={(event) =>
+                          updateAttribute("7", event.target.value)
+                        }
                       />
                     </label>
                     <label>
                       Float (attribute 8)
                       <input
                         className="input"
-                        value={(selectedItem.attributes["8"] ?? wearValue.toFixed(6))}
-                        onChange={(event) => updateAttribute("8", event.target.value)}
+                        value={
+                          selectedItem.attributes["8"] ?? wearValue.toFixed(6)
+                        }
+                        onChange={(event) =>
+                          updateAttribute("8", event.target.value)
+                        }
                       />
                     </label>
                   </div>
@@ -3428,7 +3418,9 @@ const App = () => {
                       max="1"
                       step="0.001"
                       value={wearValue}
-                      onChange={(event) => handleWearChange(Number(event.target.value))}
+                      onChange={(event) =>
+                        handleWearChange(Number(event.target.value))
+                      }
                       style={{ "--wear-color": wearColor } as CSSProperties}
                     />
                     <div className="wear-card__meta">
@@ -3445,7 +3437,9 @@ const App = () => {
                       <input
                         type="checkbox"
                         checked={Boolean(stickerKit)}
-                        onChange={(event) => toggleSticker(event.target.checked)}
+                        onChange={(event) =>
+                          toggleSticker(event.target.checked)
+                        }
                       />
                       Sticker
                     </label>
@@ -3464,11 +3458,16 @@ const App = () => {
                         <select
                           className="input"
                           value={stickerInfo?.sticker_index ?? stickerKit}
-                          onChange={(event) => updateAttribute("113", event.target.value)}
+                          onChange={(event) =>
+                            updateAttribute("113", event.target.value)
+                          }
                         >
                           <option value="">Select sticker</option>
                           {stickerItems.map((sticker) => (
-                            <option key={sticker.id} value={sticker.sticker_index}>
+                            <option
+                              key={sticker.id}
+                              value={sticker.sticker_index}
+                            >
                               {sticker.name}
                             </option>
                           ))}
@@ -3479,7 +3478,9 @@ const App = () => {
                         <input
                           className="input"
                           value={stickerKit}
-                          onChange={(event) => updateAttribute("113", event.target.value)}
+                          onChange={(event) =>
+                            updateAttribute("113", event.target.value)
+                          }
                         />
                       </label>
                     </div>
@@ -3503,7 +3504,9 @@ const App = () => {
                       <input
                         className="input"
                         value={selectedItem.attributes["80"] ?? "0"}
-                        onChange={(event) => updateAttribute("80", event.target.value)}
+                        onChange={(event) =>
+                          updateAttribute("80", event.target.value)
+                        }
                       />
                     </label>
                     <label>
@@ -3511,7 +3514,9 @@ const App = () => {
                       <input
                         className="input"
                         value={selectedItem.attributes["81"] ?? "0"}
-                        onChange={(event) => updateAttribute("81", event.target.value)}
+                        onChange={(event) =>
+                          updateAttribute("81", event.target.value)
+                        }
                       />
                     </label>
                   </div>
@@ -3522,14 +3527,20 @@ const App = () => {
         </div>
       )}
       {wearPickerOpen && (
-        <div className="modal-backdrop" onClick={() => setWearPickerOpen(false)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => setWearPickerOpen(false)}
+        >
           <div className="modal" onClick={(event) => event.stopPropagation()}>
             <div className="modal__header content-navbar inv-popup">
               <div>
                 <h3>Select wear</h3>
                 {wearPickerSkin?.name && <p>{wearPickerSkin.name}</p>}
               </div>
-              <button className="btn btn--ghost" onClick={() => setWearPickerOpen(false)}>
+              <button
+                className="btn btn--ghost"
+                onClick={() => setWearPickerOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -3540,7 +3551,9 @@ const App = () => {
                   className="modal__card item-tile"
                   onClick={() => {
                     const wearName = option.wear?.name ?? option.name;
-                    const wearRange = getWearRangeFromName(wearName) ?? getWearRangeForSkin(option);
+                    const wearRange =
+                      getWearRangeFromName(wearName) ??
+                      getWearRangeForSkin(option);
                     createItemFromSkin(option, wearRange);
                     setWearPickerOpen(false);
                   }}
@@ -3553,7 +3566,9 @@ const App = () => {
                     />
                   </div>
                   <div className="modal__meta">
-                    <strong className="item-tile__name">{option.wear?.name ?? "Wear"}</strong>
+                    <strong className="item-tile__name">
+                      {option.wear?.name ?? "Wear"}
+                    </strong>
                     <span className="item-tile__meta">
                       Float {option.min_float ?? 0} – {option.max_float ?? 1}
                     </span>

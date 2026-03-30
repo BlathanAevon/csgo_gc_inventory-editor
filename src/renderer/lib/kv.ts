@@ -47,7 +47,12 @@ const tokenize = (input: string) => {
     }
 
     let raw = "";
-    while (i < text.length && !/\s/.test(text[i]) && text[i] !== "{" && text[i] !== "}") {
+    while (
+      i < text.length &&
+      !/\s/.test(text[i]) &&
+      text[i] !== "{" &&
+      text[i] !== "}"
+    ) {
       raw += text[i];
       i += 1;
     }

@@ -1,0 +1,20 @@
+export const urls = {
+  base_weapons:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/base_weapons.json",
+  crates:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/crates.json",
+  keys:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/keys.json",
+  skins_not_grouped:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins_not_grouped.json",
+  knives:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json",
+  stickers:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json",
+  colletibles:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collectibles.json",
+  music_kits:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/music_kits.json",
+  contributors:
+    "https://api.github.com/repos/dricotec/csgo_gc_inventory-editor/contributors",
+};

@@ -2025,6 +2025,7 @@ const App = () => {
                           />
                           <div className="library-card__meta">
                             <strong className="item-tile__name">{name}</strong>
+                            <strong className="item-tile__name">{item.name}</strong>
                             <span className="item-tile__meta">
                               ID {item.id}
                             </span>

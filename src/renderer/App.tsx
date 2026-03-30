@@ -17,6 +17,19 @@ import { urls } from "./data/urls";
 import { cs2names, cs2indexes } from "./data/cs2names";
 import { options } from "./data/options";
 import { def_index } from "./data/def_indexes";
+import {
+  ApiItem,
+  SkinItem,
+  StickerItem,
+  CrateItem,
+  KeyItem,
+  AgentItem,
+  CollectibleItem,
+  MusicKitItem,
+  PreviewItem,
+  LibrarySelectionEntry,
+  Contributor,
+} from "./types";
 
 const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
@@ -43,65 +56,6 @@ const defIndexLabels = new Map(
     (item) => [item.id, item.name],
   ),
 );
-
-type ApiItem = {
-  id: string;
-  name?: string;
-  market_hash_name?: string;
-  def_index?: string;
-  paint_index?: string;
-  image?: string;
-  rarity?: { name?: string };
-};
-
-type SkinItem = {
-  id: string;
-  name: string;
-  paint_index: string;
-  image?: string;
-  weapon?: { weapon_id?: number };
-  min_float?: number;
-  max_float?: number;
-  wear?: { name?: string };
-  rarity?: { name?: string };
-  stattrak?: boolean;
-  souvenir?: boolean;
-};
-
-type StickerItem = {
-  id: string;
-  name: string;
-  sticker_index: string;
-  image?: string;
-};
-
-type AgentItem = {
-  id: string;
-  name: string;
-  def_index: string;
-  image?: string;
-  rarity?: { name?: string; color?: string };
-  team?: { name?: string };
-};
-
-type CollectibleItem = ApiItem & {
-  description?: string | null;
-  type?: string | null;
-  premier_season?: number;
-};
-
-type MusicKitItem = ApiItem & {
-  description?: string | null;
-  exclusive?: boolean;
-};
-
-type PreviewItem =
-  | ApiItem
-  | SkinItem
-  | AgentItem
-  | StickerItem
-  | CollectibleItem
-  | MusicKitItem;
 
 const agentItems = agents as AgentItem[];
 
@@ -134,23 +88,6 @@ const rarityPalette: Record<string, string> = {
 };
 
 type LibraryType = (typeof options.libraryType)[number];
-
-type LibrarySelectionEntry =
-  | { kind: "vanilla"; item: ApiItem }
-  | { kind: "skin"; item: SkinItem }
-  | { kind: "sticker"; item: StickerItem }
-  | { kind: "agent"; item: AgentItem }
-  | { kind: "case"; item: ApiItem }
-  | { kind: "key"; item: ApiItem }
-  | { kind: "music"; item: MusicKitItem }
-  | { kind: "collectible"; item: CollectibleItem };
-
-type Contributor = {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-  contributions: number;
-};
 
 const wearSuffixRegex =
   /\s*\((factory new|minimal wear|field-tested|well-worn|battle-scarred)\)\s*$/i;

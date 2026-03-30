@@ -801,11 +801,9 @@ body {
 
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 188px);
-  gap: 0px;
-  overflow-y: auto;
+  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  gap: 16px;
   padding: 20px 32px;
-  justify-content: start;
 }
 
 .inventory-grid {

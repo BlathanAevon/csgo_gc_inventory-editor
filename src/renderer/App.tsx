@@ -1510,8 +1510,9 @@ const App = () => {
       return;
     }
     if (!sticker.sticker_index) {
-      setStatus(`Error: Sticker ${sticker.name} has no sticker_index.`);
-      return;
+      updateAttribute("113", sticker.sticker_index);
+      // setStatus(`Error: Sticker ${sticker.name} has no sticker_index.`);
+      // return;
     }
     const nextId = String(
       items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,

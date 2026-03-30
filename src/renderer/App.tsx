@@ -15,7 +15,7 @@ import {
 import agents from "./data/agents.json";
 import { urls } from "./data/urls";
 import { cs2names, cs2indexes } from "./data/cs2names";
-import { options } from "./data/options"
+import { options } from "./data/options";
 import { def_index } from "./data/def_indexes";
 
 const STICKER_DEF_INDEX = "1209";
@@ -24,10 +24,8 @@ const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
 const INVENTORY_PAGE_SIZE = 15;
 
-
 type FilterId = (typeof options.filter)[number]["id"];
 type InventoryEquippedFilter = (typeof options.inventoryEquipped)[number]["id"];
-
 
 const weaponDefIndexSet = new Set(def_index.weapons.map((item) => item.id));
 const knifeDefIndexSet = new Set(def_index.knives.map((item) => item.id));
@@ -39,10 +37,9 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...def_index.weapons, ...def_index.knives, ...def_index.gloves].map((item) => [
-    item.id,
-    item.name,
-  ]),
+  [...def_index.weapons, ...def_index.knives, ...def_index.gloves].map(
+    (item) => [item.id, item.name],
+  ),
 );
 
 type ApiItem = {
@@ -153,7 +150,6 @@ type Contributor = {
   contributions: number;
 };
 
-
 const wearSuffixRegex =
   /\s*\((factory new|minimal wear|field-tested|well-worn|battle-scarred)\)\s*$/i;
 
@@ -219,7 +215,6 @@ const isCs2MusicKitName = (name?: string) =>
 
 const isPostCsgoYearName = (name?: string) =>
   name ? /(2024|2025)/i.test(name) : false;
-
 
 const isCs2Collectible = (item: CollectibleItem) => {
   const name = item.name ?? "";
@@ -357,146 +352,200 @@ const getWearColor = (value: number) => {
   return "#e16767";
 };
 
-const getLiveImageSrc = (src: string | undefined, nonce: number) => {
-  if (!src) return undefined;
-  const joiner = src.includes("?") ? "&" : "?";
-  return `${src}${joiner}t=${nonce}`;
-};
+// const getLiveImageSrc = (src: string | undefined, nonce: number) => {
+//   if (!src) return undefined;
+//   const joiner = src.includes("?") ? "&" : "?";
+//   return `${src}${joiner}t=${nonce}`;
+// };
 
-const imageCache = new Map<string, string>();
-const imagePromiseCache = new Map<string, Promise<string>>();
-// Maximum number of cached images, helps with memory usage (5gb mem usage was too much, of course.)
-const MAX_IMAGE_CACHE = 200;
+// const imageCache = new Map<string, string>();
+// const imagePromiseCache = new Map<string, Promise<string>>();
+// // Maximum number of cached images, helps with memory usage (5gb mem usage was too much, of course.)
+// const MAX_IMAGE_CACHE = 200;
 
-const clearImageCache = () => {
-  imageCache.forEach((url) => URL.revokeObjectURL(url));
-  imageCache.clear();
-  imagePromiseCache.clear();
-};
+// const clearImageCache = () => {
+//   imageCache.forEach((url) => URL.revokeObjectURL(url));
+//   imageCache.clear();
+//   imagePromiseCache.clear();
+// };
 
-const normalizeImageCacheKey = (src: string) => {
-  try {
-    const u = new URL(src);
+// const normalizeImageCacheKey = (src: string) => {
+//   try {
+//     const u = new URL(src);
 
-    u.searchParams.delete("t");
-    return u.toString();
-  } catch (e) {
-    return src;
-  }
-};
+//     u.searchParams.delete("t");
+//     return u.toString();
+//   } catch (e) {
+//     return src;
+//   }
+// };
 
-const evictOldImagesIfNeeded = () => {
-  while (imageCache.size > MAX_IMAGE_CACHE) {
-    const firstKey = imageCache.keys().next().value;
-    if (!firstKey) break;
-    const url = imageCache.get(firstKey);
-    if (url) URL.revokeObjectURL(url);
-    imageCache.delete(firstKey);
-  }
-};
+// const evictOldImagesIfNeeded = () => {
+//   while (imageCache.size > MAX_IMAGE_CACHE) {
+//     const firstKey = imageCache.keys().next().value;
+//     if (!firstKey) break;
+//     const url = imageCache.get(firstKey);
+//     if (url) URL.revokeObjectURL(url);
+//     imageCache.delete(firstKey);
+//   }
+// };
 
-const fetchCachedImage = (src: string) => {
-  const key = normalizeImageCacheKey(src);
-  const cached = imageCache.get(key);
-  if (cached) return Promise.resolve(cached);
-  const inFlight = imagePromiseCache.get(key);
-  if (inFlight) return inFlight;
-  const request = fetch(src)
-    .then((response) => response.blob())
-    .then((blob) => {
-      const objectUrl = URL.createObjectURL(blob);
-      imageCache.set(key, objectUrl);
+// const fetchCachedImage = (src: string) => {
+//   const key = normalizeImageCacheKey(src);
+//   const cached = imageCache.get(key);
+//   if (cached) return Promise.resolve(cached);
+//   const inFlight = imagePromiseCache.get(key);
+//   if (inFlight) return inFlight;
+//   const request = fetch(src)
+//     .then((response) => response.blob())
+//     .then((blob) => {
+//       const objectUrl = URL.createObjectURL(blob);
+//       imageCache.set(key, objectUrl);
 
-      evictOldImagesIfNeeded();
-      imagePromiseCache.delete(key);
-      return objectUrl;
-    })
-    .catch(() => {
-      imagePromiseCache.delete(key);
-      return "";
-    });
-  imagePromiseCache.set(key, request);
-  return request;
-};
+//       evictOldImagesIfNeeded();
+//       imagePromiseCache.delete(key);
+//       return objectUrl;
+//     })
+//     .catch(() => {
+//       imagePromiseCache.delete(key);
+//       return "";
+//     });
+//   imagePromiseCache.set(key, request);
+//   return request;
+// };
 
-const useCachedImage = (src?: string, enabled = true) => {
-  const [cachedSrc, setCachedSrc] = useState<string | null>(null);
+// const useCachedImage = (src?: string, enabled = true) => {
+//   const [cachedSrc, setCachedSrc] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    let didCancel = false;
-    if (!src || !enabled) {
-      setCachedSrc(null);
-      return () => {
-        active = false;
-        didCancel = true;
-      };
-    }
-    const cached = imageCache.get(src);
-    if (cached) {
-      setCachedSrc(cached);
-      return () => {
-        active = false;
-      };
-    }
+//   useEffect(() => {
+//     let active = true;
+//     let didCancel = false;
+//     if (!src || !enabled) {
+//       setCachedSrc(null);
+//       return () => {
+//         active = false;
+//         didCancel = true;
+//       };
+//     }
+//     const cached = imageCache.get(src);
+//     if (cached) {
+//       setCachedSrc(cached);
+//       return () => {
+//         active = false;
+//       };
+//     }
 
-    const timer = setTimeout(() => {
-      if (didCancel || !active) return;
-      fetchCachedImage(src).then((objectUrl) => {
-        if (!active) return;
-        if (objectUrl) setCachedSrc(objectUrl);
-      });
-    }, 150);
-    return () => {
-      active = false;
-      didCancel = true;
-      clearTimeout(timer);
-    };
-  }, [src, enabled]);
+//     const timer = setTimeout(() => {
+//       if (didCancel || !active) return;
+//       fetchCachedImage(src).then((objectUrl) => {
+//         if (!active) return;
+//         if (objectUrl) setCachedSrc(objectUrl);
+//       });
+//     }, 150);
+//     return () => {
+//       active = false;
+//       didCancel = true;
+//       clearTimeout(timer);
+//     };
+//   }, [src, enabled]);
 
-  return cachedSrc;
-};
+//   return cachedSrc;
+// };
+
+// const useInView = (options?: IntersectionObserverInit) => {
+//   const ref = useRef<HTMLSpanElement | null>(null);
+//   const [inView, setInView] = useState(false);
+//   useEffect(() => {
+//     const element = ref.current;
+//     if (!element) return;
+//     const observer = new IntersectionObserver((entries) => {
+//       entries.forEach((entry) => {
+//         if (entry.isIntersecting) {
+//           setInView(true);
+//           observer.disconnect();
+//         }
+//       });
+//     }, options);
+//     observer.observe(element);
+//     return () => observer.disconnect();
+//   }, [options]);
+
+//   return { ref, inView };
+// };
+
+// const CachedImage = ({
+//   src,
+//   alt,
+//   className,
+//   fallback,
+// }: {
+//   src?: string;
+//   alt: string;
+//   className?: string;
+//   fallback?: ReactNode;
+// }) => {
+//   const { ref, inView } = useInView({ rootMargin: "100px" });
+//   const cachedSrc = useCachedImage(src, inView);
+//   const placeholder = fallback ?? <span>Loading...</span>;
+//   if (!src) return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
+//   if (!inView || !cachedSrc) return <span ref={ref}>{placeholder}</span>;
+//   return (
+//     <span ref={ref}>
+//       <img src={cachedSrc} alt={alt} className={className} loading="lazy" />
+//     </span>
+//   );
+// };
 
 const useInView = (options?: IntersectionObserverInit) => {
-  const ref = useRef<HTMLSpanElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
+
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           setInView(true);
-          observer.disconnect();
+          observer.disconnect(); // stop observing once in view
         }
       });
     }, options);
+
     observer.observe(element);
+
     return () => observer.disconnect();
   }, [options]);
 
   return { ref, inView };
 };
 
-const CachedImage = ({
-  src,
-  alt,
-  className,
-  fallback,
-}: {
+interface CachedImageProps {
   src?: string;
   alt: string;
   className?: string;
   fallback?: ReactNode;
-}) => {
-  const { ref, inView } = useInView({ rootMargin: "100px" });
-  const cachedSrc = useCachedImage(src, inView);
-  const placeholder = fallback ?? <span>Loading...</span>;
+}
+
+export const CachedImage = ({
+  src,
+  alt,
+  className,
+  fallback,
+}: CachedImageProps) => {
+  const { ref, inView } = useInView({ rootMargin: "200px" });
+
+  // If no src, show fallback immediately
   if (!src) return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
-  if (!inView || !cachedSrc) return <span ref={ref}>{placeholder}</span>;
+
   return (
     <span ref={ref}>
-      <img src={cachedSrc} alt={alt} className={className} loading="lazy" />
+      {inView ? (
+        <img src={src} alt={alt} className={className} loading="lazy" />
+      ) : (
+        (fallback ?? <span>Loading...</span>)
+      )}
     </span>
   );
 };

@@ -15,152 +15,23 @@ import {
 import agents from "./data/agents.json";
 import { urls } from "./data/urls";
 import { cs2names, cs2indexes } from "./data/cs2names";
+import { options } from "./data/options"
+import { def_index } from "./data/def_indexes";
 
+const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
 const INVENTORY_PAGE_SIZE = 15;
 
-const qualityOptions = [
-  { id: "0", name: "Normal" },
-  { id: "1", name: "Genuine" },
-  { id: "2", name: "Vintage" },
-  { id: "3", name: "Unusual" },
-  { id: "4", name: "Unique" },
-  { id: "5", name: "Community" },
-  { id: "6", name: "Developer" },
-  { id: "7", name: "Selfmade" },
-  { id: "8", name: "Customized" },
-  { id: "9", name: "Strange" },
-  { id: "10", name: "Completed" },
-  { id: "11", name: "Haunted" },
-  { id: "12", name: "Tournament" },
-];
 
-const inventoryQualityOptions = [{ id: "Any", name: "Any" }, ...qualityOptions];
+type FilterId = (typeof options.filter)[number]["id"];
+type InventoryEquippedFilter = (typeof options.inventoryEquipped)[number]["id"];
 
-const rarityOptions = [
-  { id: "0", name: "Default" },
-  { id: "1", name: "Consumer Grade" },
-  { id: "2", name: "Industrial Grade" },
-  { id: "3", name: "Mil-Spec Grade" },
-  { id: "4", name: "Restricted" },
-  { id: "5", name: "Classified" },
-  { id: "6", name: "Covert" },
-  { id: "7", name: "Contraband" },
-  { id: "99", name: "Unusual" },
-];
 
-const inventoryRarityOptions = [{ id: "Any", name: "Any" }, ...rarityOptions];
-
-const filterOptions = [
-  { id: "vanilla", label: "Vanilla" },
-  { id: "all", label: "All" },
-  { id: "weapons", label: "Weapons" },
-  { id: "knives", label: "Knives" },
-  { id: "gloves", label: "Gloves" },
-  { id: "agents", label: "Agents" },
-  { id: "stickers", label: "Stickers" },
-] as const;
-
-const inventoryEquippedOptions = [
-  { id: "all", label: "All" },
-  { id: "equipped", label: "Equipped" },
-  { id: "2", label: "CT Equipped" },
-  { id: "3", label: "T Equipped" },
-] as const;
-
-type FilterId = (typeof filterOptions)[number]["id"];
-type InventoryEquippedFilter = (typeof inventoryEquippedOptions)[number]["id"];
-const weaponDefIndexes = [
-  { id: "1", name: "Desert Eagle" },
-  { id: "2", name: "Dual Berettas" },
-  { id: "3", name: "Five-SeveN" },
-  { id: "4", name: "Glock-18" },
-  { id: "7", name: "AK-47" },
-  { id: "8", name: "AUG" },
-  { id: "9", name: "AWP" },
-  { id: "10", name: "FAMAS" },
-  { id: "11", name: "G3SG1" },
-  { id: "13", name: "Galil AR" },
-  { id: "14", name: "M249" },
-  { id: "16", name: "M4A4" },
-  { id: "17", name: "MAC-10" },
-  { id: "19", name: "P90" },
-  { id: "23", name: "MP5-SD" },
-  { id: "24", name: "UMP-45" },
-  { id: "25", name: "XM1014" },
-  { id: "26", name: "PP-Bizon" },
-  { id: "27", name: "MAG-7" },
-  { id: "28", name: "Negev" },
-  { id: "29", name: "Sawed Off" },
-  { id: "30", name: "TEC-9" },
-  { id: "31", name: "Zeus x27" },
-  { id: "32", name: "P2000" },
-  { id: "33", name: "MP7" },
-  { id: "34", name: "MP9" },
-  { id: "35", name: "Nova" },
-  { id: "36", name: "P250" },
-  { id: "38", name: "SCAR-20" },
-  { id: "39", name: "SG 556" },
-  { id: "40", name: "SSG 08" },
-  { id: "42", name: "Default Knife CT" },
-  { id: "43", name: "Flashbang" },
-  { id: "44", name: "HE Grenade" },
-  { id: "45", name: "Smoke Grenade" },
-  { id: "46", name: "Molotov" },
-  { id: "47", name: "Decoy Grenade" },
-  { id: "48", name: "Incendiary Grenade" },
-  { id: "49", name: "C4 Explosive" },
-  { id: "57", name: "Healthshot" },
-  { id: "59", name: "Default Knife T" },
-  { id: "60", name: "M4A1-S" },
-  { id: "61", name: "USP-S" },
-  { id: "63", name: "CZ-75" },
-  { id: "64", name: "R8 Revolver" },
-];
-
-const knifeDefIndexes = [
-  { id: "42", name: "Knife" },
-  { id: "59", name: "Knife" },
-  { id: "500", name: "Bayonet" },
-  { id: "503", name: "Classic Knife" },
-  { id: "505", name: "Flip Knife" },
-  { id: "506", name: "Gut Knife" },
-  { id: "507", name: "Karambit" },
-  { id: "508", name: "M9 Bayonet" },
-  { id: "509", name: "Huntsman Knife" },
-  { id: "512", name: "Falchion Knife" },
-  { id: "514", name: "Bowie Knife" },
-  { id: "515", name: "Butterfly Knife" },
-  { id: "516", name: "Shadow Daggers" },
-  { id: "517", name: "Paracord Knife" },
-  { id: "518", name: "Survival Knife" },
-  { id: "519", name: "Ursus Knife" },
-  { id: "520", name: "Navaja Knife" },
-  { id: "521", name: "Nomad Knife" },
-  { id: "522", name: "Stiletto Knife" },
-  { id: "523", name: "Talon Knife" },
-  { id: "525", name: "Skeleton Knife" },
-  { id: "526", name: "Kukri Knife" },
-];
-
-const musickitDefIndex = [{ id: "1314", name: "Music Kit" }];
-
-const gloveDefIndexes = [
-  { id: "5027", name: "Bloodhound" },
-  { id: "4725", name: "Broken Fang" },
-  { id: "5031", name: "Driver Gloves" },
-  { id: "5032", name: "Hand Wraps" },
-  { id: "5035", name: "Hydra Gloves" },
-  { id: "5033", name: "Moto Gloves" },
-  { id: "5034", name: "Specialist Gloves" },
-  { id: "5030", name: "Sport Gloves" },
-];
-
-const weaponDefIndexSet = new Set(weaponDefIndexes.map((item) => item.id));
-const knifeDefIndexSet = new Set(knifeDefIndexes.map((item) => item.id));
-const gloveDefIndexSet = new Set(gloveDefIndexes.map((item) => item.id));
+const weaponDefIndexSet = new Set(def_index.weapons.map((item) => item.id));
+const knifeDefIndexSet = new Set(def_index.knives.map((item) => item.id));
+const gloveDefIndexSet = new Set(def_index.gloves.map((item) => item.id));
 
 const isSkinDefIndex = (defIndex: string) =>
   weaponDefIndexSet.has(defIndex) ||
@@ -168,7 +39,7 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...weaponDefIndexes, ...knifeDefIndexes, ...gloveDefIndexes].map((item) => [
+  [...def_index.weapons, ...def_index.knives, ...def_index.gloves].map((item) => [
     item.id,
     item.name,
   ]),
@@ -263,37 +134,7 @@ const rarityPalette: Record<string, string> = {
   Master: "#eb4b4b",
 };
 
-const libraryRarityOptions = [
-  "Any",
-  "Consumer Grade",
-  "Industrial Grade",
-  "Mil-Spec Grade",
-  "Restricted",
-  "Classified",
-  "Covert",
-  "Contraband",
-  "Distinguished",
-  "Exceptional",
-  "Superior",
-  "Master",
-];
-
-const libraryQualityOptions = ["Any", "Normal", "StatTrak", "Souvenir"];
-
-const libraryTypeOptions = [
-  "vanilla",
-  "all",
-  "skins",
-  "knives",
-  "gloves",
-  "stickers",
-  "agents",
-  "cases",
-  "keys",
-  "music",
-  "collectibles",
-] as const;
-type LibraryType = (typeof libraryTypeOptions)[number];
+type LibraryType = (typeof options.libraryType)[number];
 
 type LibrarySelectionEntry =
   | { kind: "vanilla"; item: ApiItem }
@@ -389,7 +230,7 @@ const isCs2Collectible = (item: CollectibleItem) => {
 };
 
 const rarityNameToId = new Map(
-  rarityOptions.map((option) => [option.name.toLowerCase(), option.id]),
+  options.rarity.map((option) => [option.name.toLowerCase(), option.id]),
 );
 
 const getRarityIdFromName = (rarityName?: string) =>
@@ -2125,7 +1966,7 @@ const App = () => {
                       />
                     </div>
                     <div className="filter-row">
-                      {filterOptions.map((option) => (
+                      {options.filter.map((option) => (
                         <button
                           key={option.id}
                           className={`chip ${activeFilter === option.id ? "is-active" : ""}`}
@@ -2145,7 +1986,7 @@ const App = () => {
                             setInventoryRarity(event.target.value)
                           }
                         >
-                          {inventoryRarityOptions.map((option) => (
+                          {options.inventoryRarity.map((option) => (
                             <option key={option.id} value={option.id}>
                               {option.name}
                             </option>
@@ -2161,7 +2002,7 @@ const App = () => {
                             setInventoryQuality(event.target.value)
                           }
                         >
-                          {inventoryQualityOptions.map((option) => (
+                          {options.inventoryQuality.map((option) => (
                             <option key={option.id} value={option.id}>
                               {option.name}
                             </option>
@@ -2179,7 +2020,7 @@ const App = () => {
                             )
                           }
                         >
-                          {inventoryEquippedOptions.map((option) => (
+                          {options.inventoryEquipped.map((option) => (
                             <option key={option.id} value={option.id}>
                               {option.label}
                             </option>
@@ -2345,7 +2186,7 @@ const App = () => {
                   {libraryLoading ? "Loading library…" : ""}
                 </span>
                 <div className="library-tabs content-navbar__tabs">
-                  {libraryTypeOptions.map((tab) => (
+                  {options.libraryType.map((tab) => (
                     <button
                       key={tab}
                       className={`chip ${libraryTab === tab ? "is-active" : ""}`}
@@ -2456,7 +2297,7 @@ const App = () => {
                       value={libraryRarity}
                       onChange={(event) => setLibraryRarity(event.target.value)}
                     >
-                      {libraryRarityOptions.map((option) => (
+                      {options.libraryRarity.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
@@ -2472,7 +2313,7 @@ const App = () => {
                         setLibraryQuality(event.target.value)
                       }
                     >
-                      {libraryQualityOptions.map((option) => (
+                      {options.libraryQuality.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
@@ -3194,7 +3035,7 @@ const App = () => {
                 {skinMatch?.wear?.name && <p>{skinMatch.wear.name}</p>}
                 <p>
                   {previewRarityName ??
-                    getOptionLabel(selectedItem.rarity, rarityOptions)}
+                    getOptionLabel(selectedItem.rarity, options.rarity)}
                 </p>
               </div>
             </div>
@@ -3256,7 +3097,7 @@ const App = () => {
                   {skinMatch?.wear?.name && <p>{skinMatch.wear.name}</p>}
                   <p>
                     {previewRarityName ??
-                      getOptionLabel(selectedItem.rarity, rarityOptions)}
+                      getOptionLabel(selectedItem.rarity, options.rarity)}
                   </p>
                 </div>
               </div>
@@ -3308,12 +3149,12 @@ const App = () => {
                       updateField("quality", event.target.value)
                     }
                   >
-                    {qualityOptions.map((option) => (
+                    {options.quality.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
                     ))}
-                    {!qualityOptions.some(
+                    {!options.quality.some(
                       (option) => option.id === selectedItem.quality,
                     ) && (
                       <option value={selectedItem.quality}>
@@ -3331,12 +3172,12 @@ const App = () => {
                       updateField("rarity", event.target.value)
                     }
                   >
-                    {rarityOptions.map((option) => (
+                    {options.rarity.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
                     ))}
-                    {!rarityOptions.some(
+                    {!options.rarity.some(
                       (option) => option.id === selectedItem.rarity,
                     ) && (
                       <option value={selectedItem.rarity}>

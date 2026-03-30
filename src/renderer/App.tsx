@@ -30,6 +30,8 @@ type InventoryEquippedFilter = (typeof options.inventoryEquipped)[number]["id"];
 const weaponDefIndexSet = new Set(def_index.weapons.map((item) => item.id));
 const knifeDefIndexSet = new Set(def_index.knives.map((item) => item.id));
 const gloveDefIndexSet = new Set(def_index.gloves.map((item) => item.id));
+const cratesDefIndexSet = new Set(def_index.crates.map((item) => item.id));
+const keysDefIndexSet = new Set(def_index.keys.map((item) => item.id));
 
 const isSkinDefIndex = (defIndex: string) =>
   weaponDefIndexSet.has(defIndex) ||
@@ -958,6 +960,8 @@ const App = () => {
   const isWeapon = weaponDefIndexSet.has(selectedDefIndex);
   const isKnife = knifeDefIndexSet.has(selectedDefIndex);
   const isGlove = gloveDefIndexSet.has(selectedDefIndex);
+  const isCrate = cratesDefIndexSet.has(selectedDefIndex);
+  const isKey = keysDefIndexSet.has(selectedDefIndex);
   const isSkinItem = isWeapon || isKnife || isGlove;
   const isStickerItem = selectedDefIndex === STICKER_DEF_INDEX;
   const selectedAgent = selectedItem
@@ -997,6 +1001,10 @@ const App = () => {
         baseMatch = knifeDefIndexSet.has(item.def_index);
       } else if (activeFilter === "gloves") {
         baseMatch = gloveDefIndexSet.has(item.def_index);
+      } else if (activeFilter === "crates") {
+        baseMatch = cratesDefIndexSet.has(item.def_index);
+      } else if (activeFilter === "keys") {
+        baseMatch = keysDefIndexSet.has(item.def_index);
       } else if (activeFilter === "stickers") {
         baseMatch = item.def_index === STICKER_DEF_INDEX;
       } else if (activeFilter === "agents") {
@@ -1092,7 +1100,7 @@ const App = () => {
   const handleLoad = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".txt"; 
+    input.accept = ".txt";
 
     input.onchange = (event) => {
       const file = event.target.files[0];
@@ -1102,9 +1110,9 @@ const App = () => {
       reader.onload = (e) => {
         try {
           const content = e.target.result;
-          const parsed = parseInventory(content); 
+          const parsed = parseInventory(content);
           setInventoryDoc(parsed);
-          setFilePath(file.name); 
+          setFilePath(file.name);
           setSelectedId(parsed.items[0]?.id ?? null);
           setStatus(`Loaded ${parsed.items.length} items.`);
         } catch (err) {
@@ -1113,7 +1121,7 @@ const App = () => {
         }
       };
 
-      reader.readAsText(file); 
+      reader.readAsText(file);
     };
 
     input.click();

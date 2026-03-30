@@ -162,4 +162,3 @@ export const serializeInventory = (doc: InventoryDoc) => {
 
   return stringifyKeyValues(payload);
 };
-// This file contains logic for parsing and serializing the inventory.txt format used by csgo_gc ^_^

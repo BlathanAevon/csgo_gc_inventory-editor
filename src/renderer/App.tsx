@@ -1808,7 +1808,6 @@ const App = () => {
           >
             Credits
           </button>
-          <div className="sidebar__footer">made by drico</div>
         </aside>
 
         <main
@@ -1817,7 +1816,7 @@ const App = () => {
           }`}
         >
           {activePage === "inventory" && (
-            <div className="home-grid">
+            <div className="panel panel--library transition-all duration-200 inv-category">
               <div className="home-left">
                 <section className="panel panel--list transition-all duration-200 inv-category Active">
                   <div className="panel__header content-navbar">
@@ -2889,7 +2888,6 @@ const App = () => {
               </button>
             </>
           )}
-          <div className="context-menu__footer">made by drico</div>
         </div>
       )}
       {inspectOpen && selectedItem && (

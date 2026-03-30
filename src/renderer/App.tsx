@@ -2023,10 +2023,7 @@ const App = () => {
                           <div className="library-card__meta">
                             <strong className="item-tile__name">{name}</strong>
                             <span className="item-tile__meta">
-                              ID {item.id}
-                            </span>
-                            <span className="item-tile__meta">
-                              def_index {item.def_index}
+                              ID {item.id} DEF {item.def_index}
                             </span>
                           </div>
                         </button>

@@ -1089,14 +1089,34 @@ const App = () => {
     }
   }, [inventoryPage, totalInventoryPages]);
 
-  const handleLoad = async () => {
-    const result = await window.inventoryApi.openInventory();
-    if (!result) return;
-    const parsed = parseInventory(result.content);
-    setInventoryDoc(parsed);
-    setFilePath(result.filePath);
-    setSelectedId(parsed.items[0]?.id ?? null);
-    setStatus(`Loaded ${parsed.items.length} items.`);
+  const handleLoad = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".txt"; 
+
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target.result;
+          const parsed = parseInventory(content); 
+          setInventoryDoc(parsed);
+          setFilePath(file.name); 
+          setSelectedId(parsed.items[0]?.id ?? null);
+          setStatus(`Loaded ${parsed.items.length} items.`);
+        } catch (err) {
+          console.error(err);
+          setStatus("Failed to load inventory.");
+        }
+      };
+
+      reader.readAsText(file); 
+    };
+
+    input.click();
   };
 
   const handleSave = () => {

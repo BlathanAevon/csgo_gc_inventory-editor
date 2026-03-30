@@ -809,7 +809,7 @@ const App = () => {
 
   const stickerIndex = useMemo(() => {
     const map = new Map<string, StickerItem>();
-    keyItems.forEach((item) => {
+    stickerItems.forEach((item) => {
       if (!item.def_index) return;
       map.set(String(item.def_index), item);
     });

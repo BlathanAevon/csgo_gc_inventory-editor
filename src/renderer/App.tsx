@@ -384,6 +384,7 @@ const getDisplayName = (
   if (agent?.name) return agent.name;
   if (sticker?.name) return sticker.name;
   if (musicKit?.name) return musicKit.name;
+  if (sticker?.name) return sticker.name;
   if (collectible?.name) return collectible.name;
 
   const baseName = getBaseName(item, baseIndex);

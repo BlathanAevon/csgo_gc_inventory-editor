@@ -2,25 +2,14 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { parseInventory, serializeInventory, type InventoryDoc, type InventoryItem } from "./lib/inventory";
 import agents from "./data/agents.json";
 
-const BASE_WEAPONS_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/base_weapons.json";
-const CRATES_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/crates.json";
-const KEYS_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/keys.json";
-const SKINS_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/skins_not_grouped.json";
-const KNIFE_SKINS_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/skins.json";
-const STICKERS_URL =
-  "https://raw.githubusercontent.com/dricotec/CSGO-API-STICKERS-THING/refs/heads/main/stickers.json";
-
-const COLLECTIBLES_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/collectibles.json";
-
-const MUSIC_KITS_URL =
-  "https://raw.githubusercontent.com/ByMykel/CSGO-API/refs/heads/main/public/api/en/music_kits.json";
-
+const BASE_WEAPONS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/base_weapons.json"
+const CRATES_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/crates.json"
+const KEYS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/keys.json"
+const SKINS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins_not_grouped.json"
+const KNIFE_SKINS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json" 
+const STICKERS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json"
+const COLLECTIBLES_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collectibles.json"
+const MUSIC_KITS_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/music_kits.json"
 
 const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";

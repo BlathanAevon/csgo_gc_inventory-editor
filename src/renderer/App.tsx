@@ -1904,12 +1904,7 @@ const App = () => {
                         skinsByPaintIndex,
                         wear,
                       );
-                      const sticker =
-                        item.def_index === STICKER_DEF_INDEX
-                          ? (stickersByIndex.get(
-                              item.attributes["113"]?.trim() ?? "",
-                            ) ?? null)
-                          : null;
+                      const sticker = stickerIndex.get(item.def_index) ?? null;
                       const equippedKeys = Object.keys(
                         item.equipped_state ?? {},
                       );

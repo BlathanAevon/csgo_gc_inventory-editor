@@ -33,7 +33,6 @@ const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
-const INVENTORY_PAGE_SIZE = 15;
 
 type FilterId = (typeof options.filter)[number]["id"];
 type InventoryEquippedFilter = (typeof options.inventoryEquipped)[number]["id"];
@@ -43,6 +42,8 @@ const knifeDefIndexSet = new Set(def_index.knives.map((item) => item.id));
 const gloveDefIndexSet = new Set(def_index.gloves.map((item) => item.id));
 const cratesDefIndexSet = new Set(def_index.crates.map((item) => item.id));
 const keysDefIndexSet = new Set(def_index.keys.map((item) => item.id));
+const stickersDefIndexSet = new Set(def_index.stickers.map((item) => item.id));
+
 
 const isSkinDefIndex = (defIndex: string) =>
   weaponDefIndexSet.has(defIndex) ||
@@ -50,9 +51,14 @@ const isSkinDefIndex = (defIndex: string) =>
   gloveDefIndexSet.has(defIndex);
 
 const defIndexLabels = new Map(
-  [...def_index.weapons, ...def_index.knives, ...def_index.gloves, ...def_index.crates, ...def_index.keys].map(
-    (item) => [item.id, item.name],
-  ),
+  [
+    ...def_index.weapons,
+    ...def_index.knives,
+    ...def_index.gloves,
+    ...def_index.crates,
+    ...def_index.keys,
+    ...def_index.stickers,
+  ].map((item) => [item.id, item.name]),
 );
 
 const agentItems = agents as AgentItem[];
@@ -509,7 +515,6 @@ const App = () => {
     total: number;
     current: number;
   } | null>(null);
-  // const [inventoryPage, setInventoryPage] = useState(1);
   const [wearPickerOpen, setWearPickerOpen] = useState(false);
   const [wearPickerOptions, setWearPickerOptions] = useState<SkinItem[]>([]);
   const [wearPickerSkin, setWearPickerSkin] = useState<SkinItem | null>(null);
@@ -801,6 +806,15 @@ const App = () => {
     return map;
   }, [keyItems]);
 
+  const stickerIndex = useMemo(() => {
+    const map = new Map<string, ApiItem>();
+    stickerItems.forEach((item) => {
+      if (!item.def_index) return;
+      map.set(String(item.def_index), item);
+    });
+    return map;
+  }, [stickerItems]);
+
   const collectiblesByDefIndex = useMemo(() => {
     const map = new Map<string, CollectibleItem>();
     collectibleItems.forEach((item) => {
@@ -898,7 +912,7 @@ const App = () => {
   const isCrate = cratesDefIndexSet.has(selectedDefIndex);
   const isKey = keysDefIndexSet.has(selectedDefIndex);
   const isSkinItem = isWeapon || isKnife || isGlove;
-  const isStickerItem = selectedDefIndex === STICKER_DEF_INDEX;
+  const isStickerItem = stickersDefIndexSet.has(selectedDefIndex);
   const selectedAgent = selectedItem
     ? agentsIndex.get(selectedItem.def_index)
     : null;
@@ -941,7 +955,7 @@ const App = () => {
       } else if (activeFilter === "keys") {
         baseMatch = keysDefIndexSet.has(item.def_index);
       } else if (activeFilter === "stickers") {
-        baseMatch = item.def_index === STICKER_DEF_INDEX;
+        baseMatch = stickersDefIndexSet.has(item.def_index);
       } else if (activeFilter === "agents") {
         baseMatch = agentsIndex.has(item.def_index);
       }
@@ -1379,14 +1393,12 @@ const App = () => {
     const skinned = items.filter((item) =>
       Boolean(item.attributes["6"]?.trim()),
     ).length;
-    const stickers = items.filter(
-      (item) => item.def_index === STICKER_DEF_INDEX,
-    ).length;
     const agentsCount = items.filter((item) =>
       agentsIndex.has(item.def_index),
     ).length;
     const cases = items.filter((item) => crateIndex.has(item.def_index)).length;
     const keys = items.filter((item) => keyIndex.has(item.def_index)).length;
+    const stickers = items.filter((item) => stickerIndex.has(item.def_index)).length;
     return {
       total,
       weapons,
@@ -1398,7 +1410,7 @@ const App = () => {
       cases,
       keys,
     };
-  }, [items, agentsIndex, crateIndex, keyIndex]);
+  }, [items, agentsIndex, crateIndex, keyIndex, stickerIndex]);
 
   const handleDuplicate = () => {
     if (!selectedItem) return;
@@ -1942,6 +1954,7 @@ const App = () => {
                         baseWeaponIndex,
                         crateIndex,
                         keyIndex,
+                        stickerIndex,
                         match,
                         agent,
                       );
@@ -2004,33 +2017,6 @@ const App = () => {
                       );
                     })}
                   </div>
-                  {/* <div className="inventory-pagination">
-                    <button
-                      className="btn btn--ghost"
-                      type="button"
-                      disabled={inventoryPage <= 1}
-                      onClick={() =>
-                        setInventoryPage((page) => Math.max(1, page - 1))
-                      }
-                    >
-                      ← Prev
-                    </button>
-                    <span className="pagination__meta">
-                      Page {inventoryPage} of {totalInventoryPages}
-                    </span>
-                    <button
-                      className="btn btn--ghost"
-                      type="button"
-                      disabled={inventoryPage >= totalInventoryPages}
-                      onClick={() =>
-                        setInventoryPage((page) =>
-                          Math.min(totalInventoryPages, page + 1),
-                        )
-                      }
-                    >
-                      Next →
-                    </button>
-                  </div> */}
                 </section>
               </div>
             </div>
@@ -2192,6 +2178,7 @@ const App = () => {
                         ...def_index.gloves,
                         ...def_index.crates,
                         ...def_index.keys,
+                        ...def_index.stickers,
                       ].map((weapon) => (
                         <option key={weapon.id} value={weapon.id}>
                           {weapon.name}

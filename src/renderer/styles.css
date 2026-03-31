@@ -312,10 +312,7 @@ body {
 }
 
 .content-navbar {
-  height: 96px;
   align-items: center;
-  padding-left: 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .content-navbar__title,
@@ -352,17 +349,6 @@ body {
 .mainmenu-content__container--inventory {
   padding-top: 8px;
 }
-
-/* Sidebar styles removed - no longer used */
-
-/* Credits panel styles removed - no longer used */
-  /* padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(20, 20, 20, 0.35);
-  border-radius: 6px;
-  color: #f1f1f1;
-  text-decoration: none;
-} */
 
 .credits-card img {
   width: 44px;
@@ -751,12 +737,7 @@ body {
 .panel__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 0;
-  padding: 0 0 0 32px;
-  min-height: 96px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .panel__actions {
@@ -929,6 +910,7 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.25);
   background: linear-gradient(180deg, rgba(75, 75, 75, 0.75), rgba(175, 175, 175, 0.75));
   box-shadow: rgba(0, 0, 0, 0.25) -2px -2px 4px 4px;
+  position: relative;
 }
 
 .library-card__thumb img {
@@ -1030,6 +1012,27 @@ body {
 
 .item-tile__equipped-dot--t {
   background: rgba(255, 170, 60, 0.85);
+}
+
+.item-tile__stickers {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.item-tile__sticker {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 
 .chip {

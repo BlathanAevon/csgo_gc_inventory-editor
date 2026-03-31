@@ -72,11 +72,3 @@ export type LibrarySelectionEntry =
   | { kind: "key"; item: ApiItem }
   | { kind: "music"; item: MusicKitItem }
   | { kind: "collectible"; item: CollectibleItem };
-
-export type Contributor = {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-  contributions: number;
-};
-

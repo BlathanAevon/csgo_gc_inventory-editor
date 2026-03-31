@@ -25,7 +25,6 @@ import {
   MusicKitItem,
   PreviewItem,
   LibrarySelectionEntry,
-  Contributor,
 } from "./types";
 
 const STICKER_DEF_INDEX = "1209";
@@ -310,7 +309,6 @@ export const CachedImage = ({
     const img = imgRef.current;
     if (!img) return;
 
-    // Reset state when src changes to allow re-loading
     if (src && !loaded && !error) {
       img.src = src;
     }
@@ -346,6 +344,17 @@ const getSkinFlags = (item: InventoryItem) => {
   const isStattrak = "80" in item.attributes;
   const isSouvenir = item.quality === "12";
   return { isStattrak, isSouvenir };
+};
+
+const getStickerSlots = (
+  item: InventoryItem,
+  stickersByIndex: Map<string, StickerItem>,
+): (StickerItem | null)[] => {
+  const stickerAttrIds = ["113", "117", "121", "125"];
+  return stickerAttrIds.map((attrId) => {
+    const stickerId = item.attributes[attrId]?.trim() ?? "";
+    return stickerId ? stickersByIndex.get(stickerId) ?? null : null;
+  });
 };
 
 const getPreviewKey = (item: InventoryItem) => ({
@@ -471,8 +480,6 @@ const App = () => {
     [],
   );
   const [musicKitItems, setMusicKitItems] = useState<MusicKitItem[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [libraryLoading, setLibraryLoading] = useState(false);
   const [skinsLoaded, setSkinsLoaded] = useState(false);
   const [knifeSkinsLoaded, setKnifeSkinsLoaded] = useState(false);
   const [stickersLoaded, setStickersLoaded] = useState(false);
@@ -515,7 +522,6 @@ const App = () => {
 
   useEffect(() => {
     let mounted = true;
-    setDataLoading(true);
 
     const loaders = [
       fetch(urls.base_weapons)
@@ -568,12 +574,6 @@ const App = () => {
         }),
     ];
 
-    Promise.allSettled(loaders).finally(() => {
-      if (mounted) {
-        setDataLoading(false);
-      }
-    });
-
     return () => {
       mounted = false;
     };
@@ -601,7 +601,6 @@ const App = () => {
     )
       return;
     let mounted = true;
-    setLibraryLoading(true);
     const loaders = [] as Promise<void>[];
 
     if (!skinsLoaded) {
@@ -680,12 +679,6 @@ const App = () => {
           }),
       );
     }
-
-    Promise.allSettled(loaders).finally(() => {
-      if (mounted) {
-        setLibraryLoading(false);
-      }
-    });
 
     return () => {
       mounted = false;
@@ -1166,9 +1159,9 @@ const App = () => {
       } else if (entry.kind === "sticker") {
         newItem = getDefaultItem(String(nextId++));
         newItem.def_index = STICKER_DEF_INDEX;
-        const stickerIndex = (entry.item.sticker_index || entry.item.id || "").trim();
+        const stickerIndex = entry.item.id.replace("sticker-", "");
         if (!stickerIndex) {
-          console.warn(`Sticker "${entry.item.name}" has no sticker_index or id`);
+          console.warn(`Sticker "${entry.item.name}" has no id`);
         }
         newItem.attributes["113"] = stickerIndex || "0";
         newItem.rarity = STICKER_RARITY_ID;
@@ -1486,9 +1479,9 @@ const App = () => {
     );
     const newItem = getDefaultItem(nextId);
     newItem.def_index = STICKER_DEF_INDEX;
-    const stickerIndex = (sticker.sticker_index || sticker.id || "").trim();
+    const stickerIndex = sticker.id?.replace("sticker-", "");
     if (!stickerIndex) {
-      console.warn(`Sticker "${sticker.name}" has no sticker_index or id`);
+      console.warn(`Sticker "${sticker.name}" has no id`);
     }
     newItem.attributes["113"] = stickerIndex || "0";
     newItem.rarity = STICKER_RARITY_ID;
@@ -1773,12 +1766,6 @@ const App = () => {
             <div className="panel panel--library transition-all duration-200 inv-category">
               <div className="home-left">
                 <section className="panel panel--list transition-all duration-200 inv-category Active">
-                  <div className="panel__header content-navbar">
-                    <h2>Inventory</h2>
-                    <span className="hint">
-                      {dataLoading ? "Loading library data…" : ""}
-                    </span>
-                  </div>
                   <div className="dock-bar">
                     <button className="btn" onClick={handleLoad}>
                       Load
@@ -1925,6 +1912,7 @@ const App = () => {
                         match,
                         agent,
                       );
+                      const appliedStickers = getStickerSlots(item, stickersByIndex);
                       return (
                         <button
                           key={item.id}
@@ -1948,6 +1936,20 @@ const App = () => {
                               alt={name}
                               className="item-tile__image"
                             />
+                            {appliedStickers.some((s) => s) && (
+                              <div className="item-tile__stickers">
+                                {appliedStickers.map((sticker, index) =>
+                                  sticker ? (
+                                    <CachedImage
+                                      key={index}
+                                      src={sticker.image}
+                                      alt={sticker.name}
+                                      className={`item-tile__sticker item-tile__sticker--slot-${index}`}
+                                    />
+                                  ) : null,
+                                )}
+                              </div>
+                            )}
                             {isEquipped && (
                               <div
                                 className="item-tile__equipped"
@@ -1988,9 +1990,7 @@ const App = () => {
           {activePage === "library" && (
             <section className="panel panel--library transition-all duration-200 inv-category Active">
               <div className="panel__header content-navbar">
-                <h2>Inventory Library</h2>
                 <span className="hint">
-                  {libraryLoading ? "Loading library…" : ""}
                 </span>
                 <div className="library-tabs content-navbar__tabs">
                   {options.libraryType.map((tab) => (

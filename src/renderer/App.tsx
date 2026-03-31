@@ -157,7 +157,7 @@ const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   }
 };
 
-const emptyDoc: InventoryDoc = { rootKey: null, itemsKey: "items", items: [] };
+const emptyDoc: InventoryDoc = { rootKey: "items", itemsKey: null, items: [] };
 // default item is a desert eagle with nothing on it, which is very nice since its the most basic gun there is, I could've used any other weapon but the desert eagle fits best for me.
 const getDefaultItem = (id: string): InventoryItem => ({
   id,
@@ -487,6 +487,10 @@ const App = () => {
   const [musicKitsLoaded, setMusicKitsLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [addStatus, setAddStatus] = useState<{
+    message: string;
+    tone: "success" | "error";
+  } | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterId>("all");
   const [inventoryRarity, setInventoryRarity] = useState("Any");
   const [inventoryQuality, setInventoryQuality] = useState("Any");
@@ -519,6 +523,12 @@ const App = () => {
   } | null>(null);
   const [attributesOpen, setAttributesOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
+
+  useEffect(() => {
+    if (!addStatus) return;
+    const timer = window.setTimeout(() => setAddStatus(null), 1200);
+    return () => window.clearTimeout(timer);
+  }, [addStatus]);
 
   useEffect(() => {
     let mounted = true;
@@ -1034,18 +1044,30 @@ const App = () => {
   };
 
   const handleAdd = () => {
-    const nextId = String(
-      items.reduce(
-        (max: any, item: any) => Math.max(max, Number(item.id) || 0),
-        0,
-      ) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
+    try {
+      const nextId = String(
+        items.reduce(
+          (max: any, item: any) => Math.max(max, Number(item.id) || 0),
+          0,
+        ) + 1,
+      );
+      const newItem = getDefaultItem(nextId);
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Item ${nextId} added to inventory.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: "Failed to add item to inventory.",
+        tone: "error",
+      });
+    }
   };
 
   const handleRemove = () => {
@@ -1089,7 +1111,13 @@ const App = () => {
 
   const addSelectedLibraryItems = () => {
     const selected: any = Object.values(librarySelection);
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      setAddStatus({
+        message: "Failed to add: no library items selected.",
+        tone: "error",
+      });
+      return;
+    }
     setLibraryAddProgress({ total: selected.length, current: 0 });
     setStatus(
       `Adding ${selected.length} item${selected.length === 1 ? "" : "s"}...`,
@@ -1220,10 +1248,18 @@ const App = () => {
     if (addedCount > 0) {
       setInventoryDoc({ ...inventoryDoc, items: nextItems });
       setSelectedId(nextItems[nextItems.length - 1]?.id ?? selectedId);
+      setAddStatus({
+        message: `Successfully added ${addedCount} item${addedCount === 1 ? "" : "s"}.`,
+        tone: "success",
+      });
+    } else {
+      setAddStatus({
+        message: "Failed to add selected library items.",
+        tone: "error",
+      });
     }
     setLibrarySelection({});
     setLibraryAddProgress(null);
-    setStatus(`Added ${addedCount} item${addedCount === 1 ? "" : "s"}.`);
   };
 
   const updateField = (key: keyof InventoryItem, value: string) => {
@@ -1424,42 +1460,54 @@ const App = () => {
     skin: SkinItem,
     wearRangeOverride?: readonly [number, number] | null,
   ) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    const weaponId = skin.weapon?.weapon_id
-      ? String(skin.weapon.weapon_id)
-      : newItem.def_index;
-    newItem.def_index = weaponId;
-    const wearRange = wearRangeOverride ?? getWearRangeForSkin(skin);
-    const wearFloat = wearRange
-      ? randomBetween(wearRange[0], wearRange[1])
-      : getRandomFloatForSkin(skin);
-    newItem.attributes = {
-      ...newItem.attributes,
-      "6": skin.paint_index,
-      "7": getRandomPatternTemplate(),
-      "8": wearFloat.toFixed(6),
-    };
-    const rarityId = getRarityIdFromName(skin.rarity?.name);
-    newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
-    if (skin.souvenir) {
-      newItem.quality = "12";
-    } else if (skin.stattrak) {
-      newItem.quality = "9";
-      newItem.attributes["80"] = "0";
-      newItem.attributes["81"] = "0";
-    } else {
-      newItem.quality = DEFAULT_QUALITY_ID;
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      const weaponId = skin.weapon?.weapon_id
+        ? String(skin.weapon.weapon_id)
+        : newItem.def_index;
+      newItem.def_index = weaponId;
+      const wearRange = wearRangeOverride ?? getWearRangeForSkin(skin);
+      const wearFloat = wearRange
+        ? randomBetween(wearRange[0], wearRange[1])
+        : getRandomFloatForSkin(skin);
+      newItem.attributes = {
+        ...newItem.attributes,
+        "6": skin.paint_index,
+        "7": getRandomPatternTemplate(),
+        "8": wearFloat.toFixed(6),
+      };
+      const rarityId = getRarityIdFromName(skin.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      if (skin.souvenir) {
+        newItem.quality = "12";
+      } else if (skin.stattrak) {
+        newItem.quality = "9";
+        newItem.attributes["80"] = "0";
+        newItem.attributes["81"] = "0";
+      } else {
+        newItem.quality = DEFAULT_QUALITY_ID;
+      }
+      applyKnifeGloveDefaults(newItem, weaponId);
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${skin.name}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${skin.name}.`,
+        tone: "error",
+      });
     }
-    applyKnifeGloveDefaults(newItem, weaponId);
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added ${skin.name}.`);
   };
 
   const openWearPicker = (skin: SkinItem) => {
@@ -1474,109 +1522,169 @@ const App = () => {
   };
 
   const applyStickerFromLibrary = (sticker: StickerItem) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    newItem.def_index = STICKER_DEF_INDEX;
-    const stickerIndex = sticker.id?.replace("sticker-", "");
-    if (!stickerIndex) {
-      console.warn(`Sticker "${sticker.name}" has no id`);
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = STICKER_DEF_INDEX;
+      const stickerIndex = sticker.id?.replace("sticker-", "");
+      if (!stickerIndex) {
+        console.warn(`Sticker "${sticker.name}" has no id`);
+      }
+      newItem.attributes["113"] = stickerIndex || "0";
+      newItem.rarity = STICKER_RARITY_ID;
+      newItem.quality = STICKER_QUALITY_ID;
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added sticker item: ${sticker.name}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add sticker: ${sticker.name}.`,
+        tone: "error",
+      });
     }
-    newItem.attributes["113"] = stickerIndex || "0";
-    newItem.rarity = STICKER_RARITY_ID;
-    newItem.quality = STICKER_QUALITY_ID;
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added sticker item: ${sticker.name}.`);
   };
 
   const addAgentFromLibrary = (agent: AgentItem) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    newItem.def_index = normalizeDefIndex(agent.def_index, newItem.def_index);
-    const rarityId = getRarityIdFromName(agent.rarity?.name);
-    newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
-    newItem.quality = DEFAULT_QUALITY_ID;
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added ${agent.name}.`);
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = normalizeDefIndex(agent.def_index, newItem.def_index);
+      const rarityId = getRarityIdFromName(agent.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      newItem.quality = DEFAULT_QUALITY_ID;
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${agent.name}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${agent.name}.`,
+        tone: "error",
+      });
+    }
   };
 
   const addContainerFromLibrary = (container: ApiItem) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    newItem.def_index = normalizeDefIndex(
-      container.def_index,
-      newItem.def_index,
-    );
-    const rarityId = getRarityIdFromName(container.rarity?.name);
-    newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
-    newItem.quality = DEFAULT_QUALITY_ID;
-    applyKnifeGloveDefaults(newItem, newItem.def_index);
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added ${container.name ?? "Item"}.`);
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = normalizeDefIndex(
+        container.def_index,
+        newItem.def_index,
+      );
+      const rarityId = getRarityIdFromName(container.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      newItem.quality = DEFAULT_QUALITY_ID;
+      applyKnifeGloveDefaults(newItem, newItem.def_index);
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${container.name ?? "item"}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${container.name ?? "item"}.`,
+        tone: "error",
+      });
+    }
   };
 
   const addCollectibleFromLibrary = (collectible: CollectibleItem) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    newItem.def_index = normalizeDefIndex(
-      collectible.def_index,
-      newItem.def_index,
-    );
-    const rarityId = getRarityIdFromName(collectible.rarity?.name);
-    newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
-    newItem.quality = DEFAULT_QUALITY_ID;
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added ${collectible.name ?? "Collectible"}.`);
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = normalizeDefIndex(
+        collectible.def_index,
+        newItem.def_index,
+      );
+      const rarityId = getRarityIdFromName(collectible.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      newItem.quality = DEFAULT_QUALITY_ID;
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${collectible.name ?? "collectible"}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${collectible.name ?? "collectible"}.`,
+        tone: "error",
+      });
+    }
   };
 
   const addMusicKitFromLibrary = (kit: MusicKitItem) => {
-    const nextId = String(
-      items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1,
-    );
-    const newItem = getDefaultItem(nextId);
-    newItem.def_index = MUSIC_KIT_ITEM_DEF_INDEX;
-    if (kit.def_index) {
-      newItem.attributes[MUSIC_KIT_ATTRIBUTE_ID] = kit.def_index;
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = MUSIC_KIT_ITEM_DEF_INDEX;
+      if (kit.def_index) {
+        newItem.attributes[MUSIC_KIT_ATTRIBUTE_ID] = kit.def_index;
+      }
+      const rarityId = getRarityIdFromName(kit.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      const isStatTrak = isMusicKitStatTrak(kit);
+      if (isStatTrak) {
+        newItem.quality = "9";
+        newItem.attributes["80"] = newItem.attributes["80"] ?? "0";
+        newItem.attributes["81"] = newItem.attributes["81"] ?? "0";
+      } else {
+        newItem.quality = DEFAULT_QUALITY_ID;
+      }
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${kit.name ?? "music kit"}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${kit.name ?? "music kit"}.`,
+        tone: "error",
+      });
     }
-    const rarityId = getRarityIdFromName(kit.rarity?.name);
-    newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
-    const isStatTrak = isMusicKitStatTrak(kit);
-    if (isStatTrak) {
-      newItem.quality = "9";
-      newItem.attributes["80"] = newItem.attributes["80"] ?? "0";
-      newItem.attributes["81"] = newItem.attributes["81"] ?? "0";
-    } else {
-      newItem.quality = DEFAULT_QUALITY_ID;
-    }
-    setInventoryDoc({
-      ...inventoryDoc,
-      items: [...items, newItem],
-    });
-    setSelectedId(nextId);
-    setStatus(`Added ${kit.name ?? "Music Kit"}.`);
   };
 
   const libraryEntries = useMemo(() => {
@@ -1763,28 +1871,26 @@ const App = () => {
           }`}
         >
           {activePage === "inventory" && (
-            <div className="panel panel--library transition-all duration-200 inv-category">
-              <div className="home-left">
-                <section className="panel panel--list transition-all duration-200 inv-category Active">
+            <section className="panel panel--library">
                   <div className="dock-bar">
-                    <button className="btn" onClick={handleLoad}>
+                    <button className="btn btn--load" onClick={handleLoad}>
                       Load
                     </button>
-                    <button className="btn btn--primary" onClick={handleSave}>
+                    <button className="btn btn--save" onClick={handleSave}>
                       Save
                     </button>
-                    <button className="btn" onClick={handleAdd}>
+                    <button className="btn btn--add" onClick={handleAdd}>
                       Add
                     </button>
                     <button
-                      className="btn btn--danger"
+                      className="btn btn--remove"
                       onClick={handleRemove}
                       disabled={!selectedItem}
                     >
                       Remove
                     </button>
                   </div>
-                  <div className="inventory-toolbar inv-category__list-container">
+                  <div className="inventory-toolbar">
                     <div className="inv-search-navbar">
                       <input
                         className="input inv-search-textentry"
@@ -1797,7 +1903,7 @@ const App = () => {
                       {options.filter.map((option) => (
                         <button
                           key={option.id}
-                          className={`chip ${activeFilter === option.id ? "is-active" : ""}`}
+                          className={`chip chip--filter-${option.id} ${activeFilter === option.id ? "is-active" : ""}`}
                           onClick={() => setActiveFilter(option.id)}
                         >
                           {option.label}
@@ -1982,13 +2088,11 @@ const App = () => {
                       );
                     })}
                   </div>
-                </section>
-              </div>
-            </div>
+            </section>
           )}
 
           {activePage === "library" && (
-            <section className="panel panel--library transition-all duration-200 inv-category Active">
+            <section className="panel panel--library">
               <div className="panel__header content-navbar">
                 <span className="hint">
                 </span>
@@ -1996,7 +2100,7 @@ const App = () => {
                   {options.libraryType.map((tab) => (
                     <button
                       key={tab}
-                      className={`chip ${libraryTab === tab ? "is-active" : ""}`}
+                      className={`chip chip--library-${tab} ${libraryTab === tab ? "is-active" : ""}`}
                       onClick={() => setLibraryTab(tab)}
                     >
                       {tab === "vanilla"
@@ -2075,7 +2179,7 @@ const App = () => {
                   ].map((option) => (
                     <button
                       key={option.id}
-                      className={`chip ${libraryFilter === option.id ? "is-active" : ""}`}
+                      className={`chip chip--scope-${option.id} ${libraryFilter === option.id ? "is-active" : ""}`}
                       onClick={() =>
                         setLibraryFilter(option.id as typeof libraryFilter)
                       }
@@ -2650,7 +2754,11 @@ const App = () => {
       </div>
 
       <footer className="app__footer">
-        <span>{status ?? "Ready."}</span>
+        <span
+          className={`footer-status${addStatus ? ` footer-status--${addStatus.tone}` : ""}`}
+        >
+          {addStatus?.message ?? status ?? "Ready."}
+        </span>
         {filePath && <span>File: {filePath}</span>}
       </footer>
       {contextMenu && (

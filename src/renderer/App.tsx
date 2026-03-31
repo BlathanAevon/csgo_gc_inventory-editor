@@ -157,7 +157,7 @@ const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   }
 };
 
-const emptyDoc: InventoryDoc = { rootKey: null, itemsKey: null, items: [] };
+const emptyDoc: InventoryDoc = { rootKey: null, itemsKey: "items", items: [] };
 // default item is a desert eagle with nothing on it, which is very nice since its the most basic gun there is, I could've used any other weapon but the desert eagle fits best for me.
 const getDefaultItem = (id: string): InventoryItem => ({
   id,

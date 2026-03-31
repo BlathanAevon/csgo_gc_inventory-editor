@@ -152,10 +152,8 @@ export const serializeInventory = (doc: InventoryDoc) => {
     itemsObject[item.id] = buildItemObject(item);
   });
 
-  let payload: KvObject = itemsObject;
-  if (doc.itemsKey) {
-    payload = { [doc.itemsKey]: itemsObject };
-  }
+  const resolvedItemsKey = doc.itemsKey ?? "items";
+  let payload: KvObject = { [resolvedItemsKey]: itemsObject };
 
   if (doc.rootKey) {
     payload = { [doc.rootKey]: payload };

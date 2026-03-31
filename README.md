@@ -1,120 +1,199 @@
 # csgo_gc_inventory-editor
 
-`csgo_gc_inventory-editor` is a graphical editor for the `inventory.txt` file used by [Mikko's `csgo_gc`](https://github.com/mikkokko/csgo_gc).
+A modern, visual editor for CS:GO inventory files used by [Mikko's `csgo_gc`](https://github.com/mikkokko/csgo_gc).
 
-It provides a fast, visual workflow for loading, browsing, editing, and saving inventories without hand-editing KeyValues files.
+Build and manage complex CS:GO inventories without hand-editing KeyValues files. Browse thousands of items from a built-in API-backed library, apply stickers and patches, fine-tune attributes with an intuitive UI, and export everything back to `inventory.txt`.
 
-## Overview
+## ✨ Key Features
 
-The app is built around two primary workflows:
+| Inventory Management | Library Browser | Advanced Editing |
+|---|---|---|
+| Load and save `inventory.txt` files | Browse 10,000+ items (skins, agents, stickers, patches, graffiti, and more) | Full attribute control (paint, wear, quality, rarity) |
+| Live search and category filters | Multi-select to add items in bulk | Wear slider with visual feedback |
+| Filter by rarity, quality, equipped state | Apply stickers to weapons (up to 4 slots) | StatTrak™ & Souvenir toggles |
+| Visual preview with item images | Apply patches to agents (up to 4 slots) | Pattern & finish editor |
+| Preserve container structure | Real-time item count display | Attribute modal with metadata display |
 
-1. `Inventory`: inspect existing items, filter them, edit attributes, and save changes back to `inventory.txt`.
-2. `Library`: browse a built-in item database and add skins, knives, gloves, stickers, agents, cases, keys, music kits, and collectibles to your inventory.
+## 📸 Screenshots
 
-## Features
+| | | |
+|---|---|---|
+| ![Inventory overview](src/img/screenshot-20260331-230754.png) **Inventory View** — Browse and filter loaded items | ![Attribute editor](src/img/screenshot-20260331-230805.png) **Attribute Editor** — Fine-tune item details with gear icons and wear slider | ![Library skins](src/img/screenshot-20260331-230835.png) **Skins Library** — Browse weapon skins with rarity filters |
+| ![Graffiti library](src/img/screenshot-20260331-230845.png) **Graffiti Library** — Sealed graffiti patterns for weapon sprays | ![Patches library](src/img/screenshot-20260331-230852.png) **Patches Library** — Agent cosmetics with multi-slot preview | ![Agents library](src/img/screenshot-20260331-230858.png) **Agents Library** — Full character roster with equipped state tracking |
+| ![Music kits](src/img/screenshot-20260331-230904.png) **Music Kits** — Sound packs with rarity tiers | ![Collectibles](src/img/screenshot-20260331-230911.png) **Collectibles** — Tournament medals & souvenir drops | ![Cases](src/img/screenshot-20260331-230933.png) **Cases & Keys** — Weapon cases and collection containers |
+| ![Stickers holo](src/img/screenshot-20260331-230951.png) **Sticker Library** — 2000+ sticker designs with rarity colors | | |
 
-- Load and save `inventory.txt` files.
-- Preserve inventory container structure when parsing and serializing documents.
-- Browse inventory items with live search and category filters.
-- Filter inventory by rarity, quality, and equipped state.
-- Browse a built-in library of vanilla items, skins, gloves, stickers, agents, cases, keys, music kits, and collectibles.
-- Use library multi-select to add several items in one pass.
-- Edit item attributes such as `def_index`, quality, rarity, paint index, pattern template, wear, and StatTrak fields.
-- Preview item images, applied stickers, rarity accents, and equipped CT/T state.
-- Use a wear slider for skin items with readable wear labels.
-- Receive footer feedback for add/save/load flows.
+## 🚀 Getting Started
 
-## Screenshots
+### Prerequisites
 
-### Inventory tab
+- **Node.js** 18+ ([download](https://nodejs.org/))
+- **npm** (included with Node.js)
 
-![Inventory tab overview](src/img/screenshot-20260331-194903.png)
-
-### Library tab
-
-![Library tab overview](src/img/screenshot-20260331-194931.png)
-
-### Sticker library view
-
-![Sticker library view](src/img/screenshot-20260331-194945.png)
-
-### Attribute editor modal
-
-![Attribute editor modal](src/img/screenshot-20260331-195017.png)
-
-## Getting Started
-
-### Requirements
-
-- Node.js 18 or newer
-- npm
-
-### Installation
+### Quick Start
 
 ```bash
+# Clone this repository
+git clone https://github.com/nyctravex/csgo_gc_inventory-editor.git
+cd csgo_gc_inventory-editor
+
+# Install dependencies
 npm install
-```
 
-### Development
-
-```bash
+# Start development server
 npm run dev
 ```
 
-### Production build
+Then open `http://localhost:5173` in your browser.
+
+### Build for Production
 
 ```bash
-npm run build
+npm run build       # Create optimized bundle
+npm run preview     # Test production build locally
 ```
 
-### Preview the production build
+## 📖 Usage Guide
 
-```bash
-npm run preview
+### Inventory Workflow
+
+1. **Load a file**: Click `LOAD` and select your `inventory.txt` file from your csgo_gc directory
+2. **Browse items**: Use the search bar and filter chips (Weapons, Knives, Gloves, etc.) to find items
+3. **Inspect item**: Click any item card to view full details, rarity accents, applied stickers/patches, and wear information
+4. **Edit attributes**: Use the attribute modal to adjust quality, rarity, paint index, pattern, wear, StatTrak, or any custom attributes
+5. **Remove items**: Select items and click the `REMOVE` button (bottom-right of inventory panel)
+6. **Save**: Click `SAVE` to export changes back to `inventory.txt`
+
+### Library Workflow
+
+1. **Browse categories**: Click category tabs (Skins, Agents, Graffiti, Patches, Music Kits, etc.)
+2. **Search & filter**: Use the search bar and filter dropdowns (Rarity, Quality, Weapon type)
+3. **Multi-select items**: Check items and click `ADD SELECTED` to add multiple items at once
+4. **Add single item**: Uncheck multi-select and click any item card to add it directly
+5. **View in inventory**: Newly added items appear in the Inventory tab ready for editing
+
+### Special Item Types
+
+**Weapon Skins**
+- Paint index (finish), wear, and pattern template customization
+- StatTrak™ and Souvenir toggles
+- Up to 4 sticker slots with visual overlays
+- Real wear slider with factory condition gradients
+
+**Agents**
+- Full character roster with team affiliation (CT/T)
+- Up to 4 patch slots with visual preview overlays
+- Rarity and quality control
+
+**Stickers & Patches**
+- Apply stickers to weapon skins (attribute 113, 117, 121, 125)
+- Apply patches to agents (same attribute IDs)
+- Browse 2000+ sticker designs from Holo, Foil, and Skulls collections
+- Support for capsule and souvenir variants
+
+**Graffiti & Collectibles**
+- Sealed graffiti containers with spray patterns
+- Tint and charge management (attributes 233, 232)
+- Tournament medals and souvenir drops
+
+## 🏗 Project Architecture
+
 ```
-
-## Usage
-
-1. Start the app.
-2. Open the `Inventory` tab and use `Load` to import an existing `inventory.txt`, or begin with a fresh document.
-3. Select an item to inspect and edit its fields.
-4. Open the `Library` tab to browse available items and add them to the inventory.
-5. Use category chips, search, and dropdown filters to narrow down results.
-6. Save the result back to `inventory.txt` with `Save`.
-
-## Project Structure
-
-```text
 src/
-	img/                 Local screenshots used in the README
-	renderer/
-		App.tsx            Main application UI and workflows
-		styles.css         Global styling and theme
-		data/              Item datasets and option lists
-		lib/               Inventory parsing and serialization helpers
+├── renderer/
+│   ├── App.tsx                 # Main application (3700+ lines)
+│   ├── styles.css              # Global theme and component styles
+│   ├── main.tsx                # DOM mount point
+│   ├── types.ts                # TypeScript type definitions
+│   ├── data/
+│   │   ├── urls.ts             # API endpoints for item data
+│   │   ├── options.ts          # Filter and display options
+│   │   ├── def_indexes.ts      # Item definition constants
+│   │   └── agents.json         # Local agent metadata
+│   └── lib/
+│       ├── inventory.ts        # KeyValues parsing/serialization
+│       └── kv.ts               # Low-level KV format parser
+├── index.html                  # Entry point
+├── vite.config.ts              # Vite bundler configuration
+├── tailwind.config.cjs         # Tailwind CSS theme
+└── tsconfig.json               # TypeScript compiler options
 ```
 
-## Data and Credits
+## 🔧 Technology Stack
 
-- CS item preview data and icon references are based on the CS item datasets bundled with the project.
-- CS2 icon previews are provided by [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API/).
+- **React 18** — UI framework
+- **TypeScript** — Type-safe development
+- **Vite** — Lightning-fast build tool
+- **Tailwind CSS** — Utility-first styling
+- **ByMykel CSGO-API** — Item data source (2000+ items via REST API)
 
-## License
+## 📚 Data & Attributions
 
-This project is licensed under the CPULL License.
+- **Item preview images** — Provided by [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API)
+- **Item metadata** — Sourced from Community Sticker Capsules, Tournament Drops, and Case Collections
+- **KeyValues format** — Compatible with Valve's Source Engine configuration format
+- **API endpoints** — Real-time item database with rarity, quality, and market metadata
 
-Important restriction: personal and non-commercial use only. See [LICENSE.md](LICENSE.md) for the full terms.
+### Data Sources
 
-## Contributing
+| Item Type | API Endpoint | Count |
+|---|---|---|
+| Skins | `/public/api/en/skins.json` | 2000+ |
+| Stickers | `/public/api/en/stickers.json` | 1500+ |
+| Agents | `/public/api/en/agents.json` | 60+ |
+| Graffiti | `/public/api/en/graffiti.json` | 400+ |
+| Patches | `/public/api/en/patches.json` | 60+ |
+| Music Kits | `/public/api/en/music_kits.json` | 100+ |
+| Collectibles | `/public/api/en/collectibles.json` | 500+ |
+| Cases & Keys | `/public/api/en/cases.json` | 200+ |
 
-Contributions are welcome.
+## 📄 License
 
-1. Fork the repository.
-2. Create a branch for your change.
-3. Keep changes focused and clearly described.
-4. Open a pull request for review.
-5. Contributors are credited in the app.
+This project is licensed under the **CPULL License** — personal and non-commercial use only.
 
-## Support
+⚠️ **Important**: Read the full license terms in [LICENSE.md](LICENSE.md) before using this software.
 
-If the project is useful to you, consider starring the repository.
+- ✅ Personal, non-commercial inventory management
+- ✅ Educational and research purposes
+- ❌ Commercial use, resale, or redistribution
+- ❌ Use in commercial inventory services or trading tools
+
+## 🤝 Contributing
+
+Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation:
+
+1. **Fork** the repository
+2. Create a **feature branch** (`git checkout -b feature/awesome-feature`)
+3. Keep commits focused and descriptive
+4. **Test** your changes thoroughly
+5. Open a **pull request** with a clear description
+6. Contributors are credited in the app
+
+### Development Tips
+
+- Hot module reloading works with `npm run dev`
+- TypeScript errors show in the terminal and IDE
+- Test inventory files are in the repo (`.txt` format)
+- API calls are cached in memory per session
+
+## 💬 Support & Feedback
+
+- **Found a bug?** Open an issue with steps to reproduce
+- **Feature request?** Describe the use case and expected behavior
+- **General questions?** Check existing issues first
+- **csgo_gc integration?** See [Mikko's repository](https://github.com/mikkokko/csgo_gc) for related tools
+
+## ⭐ Show Your Support
+
+If this project has been useful to you, please consider:
+
+- **Starring** ⭐ the repository to show support
+- **Sharing** with the CS:GO community
+- **Contributing** improvements or bug fixes
+- **Reporting** issues to help improve the tool
+
+---
+
+**Built with ❤️ for the CS:GO community**
+
+[Report Issue](https://github.com/nyctravex/csgo_gc_inventory-editor/issues) • [Feature Request](https://github.com/nyctravex/csgo_gc_inventory-editor/issues) • [csgo_gc](https://github.com/mikkokko/csgo_gc)

@@ -66,6 +66,7 @@ export const options = {
     { id: "agents", label: "Agents" },
     { id: "stickers", label: "Stickers" },
     { id: "graffiti", label: "Graffiti" },
+    { id: "patches", label: "Patches" },
   ],
 
   inventoryEquipped: [
@@ -103,6 +104,7 @@ export const options = {
     "gloves",
     "stickers",
     "graffiti",
+    "patches",
     "agents",
     "cases",
     "keys",

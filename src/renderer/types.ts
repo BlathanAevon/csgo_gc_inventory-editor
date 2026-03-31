@@ -63,6 +63,14 @@ export type GraffitiItem = ApiItem & {
   };
 };
 
+export type PatchItem = ApiItem & {
+  description?: string | null;
+  original?: {
+    name?: string;
+    image_inventory?: string;
+  };
+};
+
 export type PreviewItem =
   | ApiItem
   | SkinItem
@@ -70,7 +78,8 @@ export type PreviewItem =
   | StickerItem
   | CollectibleItem
   | MusicKitItem
-  | GraffitiItem;
+  | GraffitiItem
+  | PatchItem;
 
 export type LibrarySelectionEntry =
   | { kind: "vanilla"; item: ApiItem }
@@ -81,4 +90,5 @@ export type LibrarySelectionEntry =
   | { kind: "key"; item: ApiItem }
   | { kind: "music"; item: MusicKitItem }
   | { kind: "collectible"; item: CollectibleItem }
-  | { kind: "graffiti"; item: GraffitiItem };
+  | { kind: "graffiti"; item: GraffitiItem }
+  | { kind: "patch"; item: PatchItem };

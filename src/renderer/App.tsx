@@ -24,6 +24,7 @@ import {
   CollectibleItem,
   MusicKitItem,
   GraffitiItem,
+  PatchItem,
   PreviewItem,
   LibrarySelectionEntry,
 } from "./types";
@@ -152,6 +153,10 @@ const KNIFE_GLOVE_RARITY_ID = "6";
 const STICKER_QUALITY_ID = "4";
 const STICKER_RARITY_ID = "4";
 const GRAFFITI_QUALITY_ID = "4";
+const PATCH_ATTRIBUTE_ID = "113";
+const PATCH_DEFAULT_DEF_INDEX = "4609";
+const PATCH_DEF_INDEXES = new Set(["4609"]);
+const PATCH_QUALITY_ID = "4";
 
 const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   if (knifeDefIndexSet.has(defIndex)) {
@@ -371,6 +376,20 @@ const getStickerSlots = (
   });
 };
 
+// Patches applied to agents use the same attribute slots as stickers on weapons
+// ("113", "117", "121", "125"), but values are patch def_indexes from the patches API.
+const AGENT_PATCH_ATTR_IDS = ["113", "117", "121", "125"] as const;
+
+const getAgentPatchSlots = (
+  item: InventoryItem,
+  patchesByDefIndex: Map<string, PatchItem>,
+): (PatchItem | null)[] => {
+  return AGENT_PATCH_ATTR_IDS.map((attrId) => {
+    const patchDefIndex = item.attributes[attrId]?.trim() ?? "";
+    return patchDefIndex ? patchesByDefIndex.get(patchDefIndex) ?? null : null;
+  });
+};
+
 const getPreviewKey = (item: InventoryItem) => ({
   defIndex: item.def_index,
   finish: item.attributes["6"],
@@ -391,12 +410,14 @@ const getDisplayName = (
   graffiti?: GraffitiItem | null,
   musicKit?: MusicKitItem | null,
   collectible?: CollectibleItem | null,
+  patch?: PatchItem | null,
 ) => {
   if (skinMatch?.name)
     return getSkinDisplayName(skinMatch.name) || skinMatch.name;
   if (agent?.name) return agent.name;
   if (sticker?.name) return sticker.name;
   if (graffiti?.name) return graffiti.name;
+  if (patch?.name) return patch.name;
   if (musicKit?.name) return musicKit.name;
   if (collectible?.name) return collectible.name;
 
@@ -501,6 +522,8 @@ const App = () => {
   const [knifeSkinsLoaded, setKnifeSkinsLoaded] = useState(false);
   const [stickersLoaded, setStickersLoaded] = useState(false);
   const [graffitiLoaded, setGraffitiLoaded] = useState(false);
+  const [patchItems, setPatchItems] = useState<PatchItem[]>([]);
+  const [patchesLoaded, setPatchesLoaded] = useState(false);
   const [collectiblesLoaded, setCollectiblesLoaded] = useState(false);
   const [musicKitsLoaded, setMusicKitsLoaded] = useState(false);
   const [search, setSearch] = useState("");
@@ -613,6 +636,19 @@ const App = () => {
             setStatus("Failed to load graffiti list.");
           }
         }),
+
+      fetch(urls.patches)
+        .then((response) => response.json())
+        .then((data) => {
+          if (!mounted) return;
+          setPatchItems(data as PatchItem[]);
+          setPatchesLoaded(true);
+        })
+        .catch(() => {
+          if (mounted) {
+            setStatus("Failed to load patches list.");
+          }
+        }),
     ];
 
     return () => {
@@ -638,6 +674,7 @@ const App = () => {
       knifeSkinsLoaded &&
       stickersLoaded &&
       graffitiLoaded &&
+      patchesLoaded &&
       collectiblesLoaded &&
       musicKitsLoaded
     )
@@ -731,6 +768,7 @@ const App = () => {
     knifeSkinsLoaded,
     stickersLoaded,
     graffitiLoaded,
+    patchesLoaded,
     collectiblesLoaded,
     musicKitsLoaded,
   ]);
@@ -815,6 +853,15 @@ const App = () => {
     return map;
   }, [graffitiItems]);
 
+  const patchesByDefIndex = useMemo(() => {
+    const map = new Map<string, PatchItem>();
+    patchItems.forEach((item) => {
+      if (!item.def_index) return;
+      map.set(String(item.def_index), item);
+    });
+    return map;
+  }, [patchItems]);
+
   const allSkins = useMemo(() => {
     const map = new Map<string, SkinItem>();
     [...skinsNotGrouped, ...knifeSkins].forEach((skin) => {
@@ -848,6 +895,13 @@ const App = () => {
     const graffitiId = item.attributes[GRAFFITI_ATTRIBUTE_ID]?.trim() ?? "";
     if (!graffitiId) return null;
     return graffitiByDefIndex.get(graffitiId) ?? null;
+  };
+
+  const getPatchForItem = (item: InventoryItem) => {
+    if (!PATCH_DEF_INDEXES.has(item.def_index)) return null;
+    const patchId = item.attributes[PATCH_ATTRIBUTE_ID]?.trim() ?? "";
+    if (!patchId) return null;
+    return patchesByDefIndex.get(patchId) ?? null;
   };
 
   const stickersByIndex = useMemo(() => {
@@ -933,6 +987,7 @@ const App = () => {
   const isCrate = cratesDefIndexSet.has(selectedDefIndex);
   const isKey = keysDefIndexSet.has(selectedDefIndex);
   const isGraffitiItem = GRAFFITI_DEF_INDEXES.has(selectedDefIndex);
+  const isPatchItem = PATCH_DEF_INDEXES.has(selectedDefIndex);
   const isSkinItem = isWeapon || isKnife || isGlove;
   const isStickerItem = selectedDefIndex === STICKER_DEF_INDEX;
   const selectedAgent = selectedItem
@@ -944,6 +999,7 @@ const App = () => {
   const selectedGraffiti = selectedItem
     ? getGraffitiForItem(selectedItem)
     : null;
+  const selectedPatch = selectedItem ? getPatchForItem(selectedItem) : null;
   const selectedCollectible = selectedItem
     ? (collectiblesByDefIndex.get(selectedItem.def_index) ?? null)
     : null;
@@ -984,6 +1040,8 @@ const App = () => {
         baseMatch = item.def_index === STICKER_DEF_INDEX;
       } else if (activeFilter === "graffiti") {
         baseMatch = GRAFFITI_DEF_INDEXES.has(item.def_index);
+      } else if (activeFilter === "patches") {
+        baseMatch = PATCH_DEF_INDEXES.has(item.def_index);
       } else if (activeFilter === "agents") {
         baseMatch = agentsIndex.has(item.def_index);
       }
@@ -1013,6 +1071,7 @@ const App = () => {
           : null;
       const musicKit = getMusicKitForItem(item);
       const graffiti = getGraffitiForItem(item);
+      const patch = getPatchForItem(item);
       const collectible = collectiblesByDefIndex.get(item.def_index) ?? null;
       const name = getDisplayName(
         item,
@@ -1023,6 +1082,7 @@ const App = () => {
         graffiti,
         musicKit,
         collectible,
+        patch,
       );
       return (
         item.def_index.includes(term) ||
@@ -1042,6 +1102,7 @@ const App = () => {
     agentsIndex,
     collectiblesByDefIndex,
     graffitiByDefIndex,
+    patchesByDefIndex,
     musicKitsByDefIndex,
   ]);
 
@@ -1307,6 +1368,15 @@ const App = () => {
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
         newItem.quality = GRAFFITI_QUALITY_ID;
+      } else if (entry.kind === "patch") {
+        newItem = getDefaultItem(String(nextId++));
+        newItem.def_index = PATCH_DEFAULT_DEF_INDEX;
+        if (entry.item.def_index) {
+          newItem.attributes[PATCH_ATTRIBUTE_ID] = entry.item.def_index;
+        }
+        const rarityId = getRarityIdFromName(entry.item.rarity?.name);
+        newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+        newItem.quality = PATCH_QUALITY_ID;
       }
 
       if (newItem) {
@@ -1387,6 +1457,7 @@ const App = () => {
     selectedAgent ??
     (isStickerItem ? (stickerInfo ?? null) : null) ??
     selectedGraffiti ??
+    selectedPatch ??
     selectedMusicKit ??
     selectedCollectible;
   
@@ -1419,6 +1490,7 @@ const App = () => {
         selectedGraffiti,
         selectedMusicKit,
         selectedCollectible,
+        selectedPatch,
       )
     : "";
 
@@ -1478,6 +1550,9 @@ const App = () => {
     const graffiti = items.filter((item) =>
       GRAFFITI_DEF_INDEXES.has(item.def_index),
     ).length;
+    const patches = items.filter((item) =>
+      PATCH_DEF_INDEXES.has(item.def_index),
+    ).length;
     const agentsCount = items.filter((item) =>
       agentsIndex.has(item.def_index),
     ).length;
@@ -1491,6 +1566,7 @@ const App = () => {
       skinned,
       stickers,
       graffiti,
+      patches,
       agentsCount,
       cases,
       keys,
@@ -1800,6 +1876,38 @@ const App = () => {
     }
   };
 
+  const addPatchFromLibrary = (patch: PatchItem) => {
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = PATCH_DEFAULT_DEF_INDEX;
+      if (patch.def_index) {
+        newItem.attributes[PATCH_ATTRIBUTE_ID] = patch.def_index;
+      }
+      const rarityId = getRarityIdFromName(patch.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      newItem.quality = PATCH_QUALITY_ID;
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${patch.name ?? "patch"}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${patch.name ?? "patch"}.`,
+        tone: "error",
+      });
+    }
+  };
+
   const libraryEntries = useMemo(() => {
     const term = librarySearch.trim().toLowerCase();
     const matchesSearch = (text: string) =>
@@ -1888,6 +1996,14 @@ const App = () => {
       return matchesSearch(`${graffiti.name ?? ""} ${graffiti.def_index ?? ""}`);
     });
 
+    const patchEntries = patchItems.filter((patch) => {
+      if (!(showAll || libraryTab === "patches")) return false;
+      if (!matchesPopularity(patch.name ?? "", patch.rarity?.name))
+        return false;
+      if (!matchesRarity(patch.rarity?.name)) return false;
+      return matchesSearch(`${patch.name ?? ""} ${patch.def_index ?? ""}`);
+    });
+
     const agentEntries = agentItems.filter((agent) => {
       if (!(showAll || libraryTab === "agents")) return false;
       if (!matchesPopularity(agent.name, agent.rarity?.name)) return false;
@@ -1930,6 +2046,7 @@ const App = () => {
       skinEntries,
       stickerEntries,
       graffitiEntries,
+      patchEntries,
       agentEntries,
       caseEntries,
       keyEntries,
@@ -1946,6 +2063,7 @@ const App = () => {
     librarySkins,
     stickerItems,
     graffitiItems,
+    patchItems,
     baseWeapons,
     crateItems,
     keyItems,
@@ -1959,6 +2077,7 @@ const App = () => {
     skinEntries,
     stickerEntries,
     graffitiEntries,
+    patchEntries,
     agentEntries,
     caseEntries,
     keyEntries,
@@ -2110,12 +2229,14 @@ const App = () => {
                       const isTEquipped = equippedKeys.includes("3");
                       const musicKit = getMusicKitForItem(item);
                       const graffiti = getGraffitiForItem(item);
+                      const patch = getPatchForItem(item);
                       const collectible =
                         collectiblesByDefIndex.get(item.def_index) ?? null;
                       const rarityName =
                         match?.rarity?.name ??
                         agent?.rarity?.name ??
                         graffiti?.rarity?.name ??
+                        patch?.rarity?.name ??
                         musicKit?.rarity?.name ??
                         collectible?.rarity?.name ??
                         undefined;
@@ -2123,6 +2244,7 @@ const App = () => {
                         match?.rarity ??
                           agent?.rarity ??
                           graffiti?.rarity ??
+                          patch?.rarity ??
                           musicKit?.rarity ??
                           collectible?.rarity ??
                           (rarityName ? { name: rarityName } : undefined),
@@ -2136,6 +2258,7 @@ const App = () => {
                         graffiti,
                         musicKit,
                         collectible,
+                        patch,
                       );
                       const image = getPreviewImage(
                         item,
@@ -2143,6 +2266,7 @@ const App = () => {
                           agent ??
                           sticker ??
                           graffiti ??
+                          patch ??
                           musicKit ??
                           collectible,
                         baseWeaponIndex,
@@ -2151,7 +2275,13 @@ const App = () => {
                         match,
                         agent,
                       );
-                      const appliedStickers = getStickerSlots(item, stickersByIndex);
+                      const isAgentCard = agent !== null;
+                      const appliedStickers = isAgentCard
+                        ? []
+                        : getStickerSlots(item, stickersByIndex);
+                      const agentPatches = isAgentCard
+                        ? getAgentPatchSlots(item, patchesByDefIndex)
+                        : [];
                       return (
                         <button
                           key={item.id}
@@ -2183,6 +2313,20 @@ const App = () => {
                                       key={index}
                                       src={sticker.image}
                                       alt={sticker.name}
+                                      className={`item-tile__sticker item-tile__sticker--slot-${index}`}
+                                    />
+                                  ) : null,
+                                )}
+                              </div>
+                            )}
+                            {agentPatches.some((p) => p) && (
+                              <div className="item-tile__stickers item-tile__stickers--patches">
+                                {agentPatches.map((patch, index) =>
+                                  patch ? (
+                                    <CachedImage
+                                      key={index}
+                                      src={patch.image}
+                                      alt={patch.name ?? "Patch"}
                                       className={`item-tile__sticker item-tile__sticker--slot-${index}`}
                                     />
                                   ) : null,
@@ -2658,6 +2802,63 @@ const App = () => {
                     </div>
                   );
                 })}
+                {patchEntries.map((patch) => {
+                  const selectionKey = `patch:${patch.id}`;
+                  const isSelected = Boolean(librarySelection[selectionKey]);
+                  const handleSelect = () =>
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "patch",
+                      item: patch,
+                    });
+                  return (
+                    <div
+                      key={patch.id}
+                      className={`library-card item-tile ${isSelected ? "is-selected" : ""}`}
+                    >
+                      <button
+                        className="library-card__add"
+                        type="button"
+                        onClick={() =>
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addPatchFromLibrary(patch)
+                        }
+                      >
+                        +
+                      </button>
+                      <div
+                        className="library-card__thumb item-tile__bg is-clickable"
+                        onClick={() =>
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addPatchFromLibrary(patch)
+                        }
+                      >
+                        <CachedImage
+                          src={patch.image}
+                          alt={patch.name ?? "Patch"}
+                          className="item-tile__image"
+                        />
+                      </div>
+                      <div
+                        className="rarity-bar"
+                        style={{
+                          backgroundColor: getRarityColor(patch.rarity),
+                        }}
+                      />
+                      <div className="library-card__meta">
+                        <strong className="item-tile__name">
+                          {patch.name ?? "Patch"}
+                        </strong>
+                        {patch.def_index && (
+                          <span className="item-tile__meta">
+                            Patch {patch.def_index}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {agentEntries.map((agent) => {
                   const selectionKey = `agent:${agent.id}`;
                   const isSelected = Boolean(librarySelection[selectionKey]);
@@ -3117,6 +3318,8 @@ const App = () => {
                             ? "Weapon"
                             : isGraffitiItem
                               ? "Graffiti"
+                              : isPatchItem
+                                ? "Patch"
                             : "Item"}
                       : {defIndexLabel}
                     </p>
@@ -3297,6 +3500,41 @@ const App = () => {
                   </div>
                 </>
               ) : null}
+
+              {selectedAgent && (() => {
+                const modalPatchSlots = getAgentPatchSlots(selectedItem, patchesByDefIndex);
+                const hasAnyPatch = modalPatchSlots.some((p) => p);
+                return (
+                  <div className="sticker-card">
+                    <div className="sticker-card__header">
+                      <strong>Applied patches</strong>
+                    </div>
+                    {hasAnyPatch ? (
+                      <div className="item-tile__stickers item-tile__stickers--patches item-tile__stickers--modal">
+                        {modalPatchSlots.map((patch, index) =>
+                          patch ? (
+                            <div key={index} className="sticker-card__slot">
+                              <CachedImage
+                                src={patch.image}
+                                alt={patch.name ?? "Patch"}
+                                className="sticker-card__image"
+                              />
+                              <span className="sticker-card__name">
+                                {patch.name ?? `Patch (slot ${index})`}
+                              </span>
+                              <span className="sticker-card__attr">
+                                attr {AGENT_PATCH_ATTR_IDS[index]}
+                              </span>
+                            </div>
+                          ) : null,
+                        )}
+                      </div>
+                    ) : (
+                      <p className="sticker-card__empty">No patches applied</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {isStickerItem && (
                 <div className="sticker-card">

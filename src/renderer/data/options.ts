@@ -65,6 +65,7 @@ export const options = {
     { id: "gloves", label: "Gloves" },
     { id: "agents", label: "Agents" },
     { id: "stickers", label: "Stickers" },
+    { id: "graffiti", label: "Graffiti" },
   ],
 
   inventoryEquipped: [
@@ -76,6 +77,9 @@ export const options = {
 
   libraryRarity: [
     "Any",
+    "High Grade",
+    "Remarkable",
+    "Exotic",
     "Consumer Grade",
     "Industrial Grade",
     "Mil-Spec Grade",
@@ -98,6 +102,7 @@ export const options = {
     "knives",
     "gloves",
     "stickers",
+    "graffiti",
     "agents",
     "cases",
     "keys",

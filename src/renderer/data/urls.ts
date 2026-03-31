@@ -11,6 +11,8 @@ export const urls = {
     "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json",
   stickers:
     "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json",
+  graffiti:
+    "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/graffiti.json",
   colletibles:
     "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/collectibles.json",
   music_kits:

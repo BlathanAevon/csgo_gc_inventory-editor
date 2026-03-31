@@ -55,13 +55,22 @@ export type MusicKitItem = ApiItem & {
   exclusive?: boolean;
 };
 
+export type GraffitiItem = ApiItem & {
+  description?: string | null;
+  original?: {
+    name?: string;
+    image_inventory?: string;
+  };
+};
+
 export type PreviewItem =
   | ApiItem
   | SkinItem
   | AgentItem
   | StickerItem
   | CollectibleItem
-  | MusicKitItem;
+  | MusicKitItem
+  | GraffitiItem;
 
 export type LibrarySelectionEntry =
   | { kind: "vanilla"; item: ApiItem }
@@ -71,4 +80,5 @@ export type LibrarySelectionEntry =
   | { kind: "case"; item: ApiItem }
   | { kind: "key"; item: ApiItem }
   | { kind: "music"; item: MusicKitItem }
-  | { kind: "collectible"; item: CollectibleItem };
+  | { kind: "collectible"; item: CollectibleItem }
+  | { kind: "graffiti"; item: GraffitiItem };

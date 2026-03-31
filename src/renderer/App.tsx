@@ -23,6 +23,7 @@ import {
   AgentItem,
   CollectibleItem,
   MusicKitItem,
+  GraffitiItem,
   PreviewItem,
   LibrarySelectionEntry,
 } from "./types";
@@ -30,6 +31,11 @@ import {
 const STICKER_DEF_INDEX = "1209";
 const MUSIC_KIT_ITEM_DEF_INDEX = "1314";
 const MUSIC_KIT_ATTRIBUTE_ID = "166";
+const GRAFFITI_ATTRIBUTE_ID = "113";
+const GRAFFITI_TINT_ATTRIBUTE_ID = "233";
+const GRAFFITI_USES_ATTRIBUTE_ID = "232";
+const GRAFFITI_DEFAULT_DEF_INDEX = "1348";
+const GRAFFITI_DEF_INDEXES = new Set(["1348", "1349"]);
 const DEFAULT_GLOVE_DEF_INDEXES = new Set(["5028", "5029"]);
 
 type FilterId = (typeof options.filter)[number]["id"];
@@ -128,7 +134,14 @@ const rarityNameToId = new Map(
 );
 
 const getRarityIdFromName = (rarityName?: string) =>
-  rarityName ? rarityNameToId.get(rarityName.toLowerCase()) : undefined;
+  rarityName
+    ? rarityNameToId.get(rarityName.toLowerCase()) ??
+      {
+        "high grade": "3",
+        remarkable: "4",
+        exotic: "5",
+      }[rarityName.toLowerCase()]
+    : undefined;
 
 const getRandomPatternTemplate = () =>
   String(Math.floor(Math.random() * 999) + 1);
@@ -138,6 +151,7 @@ const KNIFE_GLOVE_QUALITY_ID = "3";
 const KNIFE_GLOVE_RARITY_ID = "6";
 const STICKER_QUALITY_ID = "4";
 const STICKER_RARITY_ID = "4";
+const GRAFFITI_QUALITY_ID = "4";
 
 const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   if (knifeDefIndexSet.has(defIndex)) {
@@ -374,6 +388,7 @@ const getDisplayName = (
   skinMatch?: SkinItem | null,
   agent?: AgentItem | null,
   sticker?: StickerItem | null,
+  graffiti?: GraffitiItem | null,
   musicKit?: MusicKitItem | null,
   collectible?: CollectibleItem | null,
 ) => {
@@ -381,6 +396,7 @@ const getDisplayName = (
     return getSkinDisplayName(skinMatch.name) || skinMatch.name;
   if (agent?.name) return agent.name;
   if (sticker?.name) return sticker.name;
+  if (graffiti?.name) return graffiti.name;
   if (musicKit?.name) return musicKit.name;
   if (collectible?.name) return collectible.name;
 
@@ -476,6 +492,7 @@ const App = () => {
   const [skinsNotGrouped, setSkinsNotGrouped] = useState<SkinItem[]>([]);
   const [knifeSkins, setKnifeSkins] = useState<SkinItem[]>([]);
   const [stickerItems, setStickerItems] = useState<StickerItem[]>([]);
+  const [graffitiItems, setGraffitiItems] = useState<GraffitiItem[]>([]);
   const [collectibleItems, setCollectibleItems] = useState<CollectibleItem[]>(
     [],
   );
@@ -483,6 +500,7 @@ const App = () => {
   const [skinsLoaded, setSkinsLoaded] = useState(false);
   const [knifeSkinsLoaded, setKnifeSkinsLoaded] = useState(false);
   const [stickersLoaded, setStickersLoaded] = useState(false);
+  const [graffitiLoaded, setGraffitiLoaded] = useState(false);
   const [collectiblesLoaded, setCollectiblesLoaded] = useState(false);
   const [musicKitsLoaded, setMusicKitsLoaded] = useState(false);
   const [search, setSearch] = useState("");
@@ -582,6 +600,19 @@ const App = () => {
             setStatus("Failed to load sticker list.");
           }
         }),
+
+      fetch(urls.graffiti)
+        .then((response) => response.json())
+        .then((data) => {
+          if (!mounted) return;
+          setGraffitiItems(data as GraffitiItem[]);
+          setGraffitiLoaded(true);
+        })
+        .catch(() => {
+          if (mounted) {
+            setStatus("Failed to load graffiti list.");
+          }
+        }),
     ];
 
     return () => {
@@ -606,6 +637,7 @@ const App = () => {
       skinsLoaded &&
       knifeSkinsLoaded &&
       stickersLoaded &&
+      graffitiLoaded &&
       collectiblesLoaded &&
       musicKitsLoaded
     )
@@ -698,6 +730,7 @@ const App = () => {
     skinsLoaded,
     knifeSkinsLoaded,
     stickersLoaded,
+    graffitiLoaded,
     collectiblesLoaded,
     musicKitsLoaded,
   ]);
@@ -773,6 +806,15 @@ const App = () => {
     return map;
   }, [musicKitItems]);
 
+  const graffitiByDefIndex = useMemo(() => {
+    const map = new Map<string, GraffitiItem>();
+    graffitiItems.forEach((item) => {
+      if (!item.def_index) return;
+      map.set(String(item.def_index), item);
+    });
+    return map;
+  }, [graffitiItems]);
+
   const allSkins = useMemo(() => {
     const map = new Map<string, SkinItem>();
     [...skinsNotGrouped, ...knifeSkins].forEach((skin) => {
@@ -799,6 +841,13 @@ const App = () => {
     const kitId = item.attributes[MUSIC_KIT_ATTRIBUTE_ID]?.trim() ?? "";
     if (!kitId) return null;
     return musicKitsByDefIndex.get(kitId) ?? null;
+  };
+
+  const getGraffitiForItem = (item: InventoryItem) => {
+    if (!GRAFFITI_DEF_INDEXES.has(item.def_index)) return null;
+    const graffitiId = item.attributes[GRAFFITI_ATTRIBUTE_ID]?.trim() ?? "";
+    if (!graffitiId) return null;
+    return graffitiByDefIndex.get(graffitiId) ?? null;
   };
 
   const stickersByIndex = useMemo(() => {
@@ -883,6 +932,7 @@ const App = () => {
   const isGlove = gloveDefIndexSet.has(selectedDefIndex);
   const isCrate = cratesDefIndexSet.has(selectedDefIndex);
   const isKey = keysDefIndexSet.has(selectedDefIndex);
+  const isGraffitiItem = GRAFFITI_DEF_INDEXES.has(selectedDefIndex);
   const isSkinItem = isWeapon || isKnife || isGlove;
   const isStickerItem = selectedDefIndex === STICKER_DEF_INDEX;
   const selectedAgent = selectedItem
@@ -890,6 +940,9 @@ const App = () => {
     : null;
   const selectedMusicKit = selectedItem
     ? getMusicKitForItem(selectedItem)
+    : null;
+  const selectedGraffiti = selectedItem
+    ? getGraffitiForItem(selectedItem)
     : null;
   const selectedCollectible = selectedItem
     ? (collectiblesByDefIndex.get(selectedItem.def_index) ?? null)
@@ -929,6 +982,8 @@ const App = () => {
         baseMatch = keysDefIndexSet.has(item.def_index);
       } else if (activeFilter === "stickers") {
         baseMatch = item.def_index === STICKER_DEF_INDEX;
+      } else if (activeFilter === "graffiti") {
+        baseMatch = GRAFFITI_DEF_INDEXES.has(item.def_index);
       } else if (activeFilter === "agents") {
         baseMatch = agentsIndex.has(item.def_index);
       }
@@ -957,6 +1012,7 @@ const App = () => {
           ? (stickersByIndex.get(item.attributes["113"]?.trim() ?? "") ?? null)
           : null;
       const musicKit = getMusicKitForItem(item);
+      const graffiti = getGraffitiForItem(item);
       const collectible = collectiblesByDefIndex.get(item.def_index) ?? null;
       const name = getDisplayName(
         item,
@@ -964,6 +1020,7 @@ const App = () => {
         skinMatch,
         agent,
         sticker,
+        graffiti,
         musicKit,
         collectible,
       );
@@ -984,6 +1041,7 @@ const App = () => {
     baseWeaponIndex,
     agentsIndex,
     collectiblesByDefIndex,
+    graffitiByDefIndex,
     musicKitsByDefIndex,
   ]);
 
@@ -1236,6 +1294,19 @@ const App = () => {
         const rarityId = getRarityIdFromName(entry.item.rarity?.name);
         newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
         newItem.quality = DEFAULT_QUALITY_ID;
+      } else if (entry.kind === "graffiti") {
+        newItem = getDefaultItem(String(nextId++));
+        newItem.def_index = GRAFFITI_DEFAULT_DEF_INDEX;
+        if (entry.item.def_index) {
+          newItem.attributes[GRAFFITI_ATTRIBUTE_ID] = entry.item.def_index;
+        }
+        newItem.attributes[GRAFFITI_TINT_ATTRIBUTE_ID] =
+          newItem.attributes[GRAFFITI_TINT_ATTRIBUTE_ID] ?? "0";
+        newItem.attributes[GRAFFITI_USES_ATTRIBUTE_ID] =
+          newItem.attributes[GRAFFITI_USES_ATTRIBUTE_ID] ?? "50";
+        const rarityId = getRarityIdFromName(entry.item.rarity?.name);
+        newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+        newItem.quality = GRAFFITI_QUALITY_ID;
       }
 
       if (newItem) {
@@ -1315,6 +1386,7 @@ const App = () => {
     skinMatchWithImage ??
     selectedAgent ??
     (isStickerItem ? (stickerInfo ?? null) : null) ??
+    selectedGraffiti ??
     selectedMusicKit ??
     selectedCollectible;
   
@@ -1344,6 +1416,7 @@ const App = () => {
         skinMatch,
         selectedAgent,
         stickerInfo ?? null,
+        selectedGraffiti,
         selectedMusicKit,
         selectedCollectible,
       )
@@ -1402,6 +1475,9 @@ const App = () => {
     const stickers = items.filter(
       (item) => item.def_index === STICKER_DEF_INDEX,
     ).length;
+    const graffiti = items.filter((item) =>
+      GRAFFITI_DEF_INDEXES.has(item.def_index),
+    ).length;
     const agentsCount = items.filter((item) =>
       agentsIndex.has(item.def_index),
     ).length;
@@ -1414,6 +1490,7 @@ const App = () => {
       gloves,
       skinned,
       stickers,
+      graffiti,
       agentsCount,
       cases,
       keys,
@@ -1687,6 +1764,42 @@ const App = () => {
     }
   };
 
+  const addGraffitiFromLibrary = (graffiti: GraffitiItem) => {
+    try {
+      const nextId = String(
+        items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) +
+          1,
+      );
+      const newItem = getDefaultItem(nextId);
+      newItem.def_index = GRAFFITI_DEFAULT_DEF_INDEX;
+      if (graffiti.def_index) {
+        newItem.attributes[GRAFFITI_ATTRIBUTE_ID] = graffiti.def_index;
+      }
+      newItem.attributes[GRAFFITI_TINT_ATTRIBUTE_ID] =
+        newItem.attributes[GRAFFITI_TINT_ATTRIBUTE_ID] ?? "0";
+      newItem.attributes[GRAFFITI_USES_ATTRIBUTE_ID] =
+        newItem.attributes[GRAFFITI_USES_ATTRIBUTE_ID] ?? "50";
+      const rarityId = getRarityIdFromName(graffiti.rarity?.name);
+      newItem.rarity = rarityId ?? DEFAULT_RARITY_ID;
+      newItem.quality = GRAFFITI_QUALITY_ID;
+      setInventoryDoc({
+        ...inventoryDoc,
+        items: [...items, newItem],
+      });
+      setSelectedId(nextId);
+      setAddStatus({
+        message: `Added ${graffiti.name ?? "graffiti"}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setAddStatus({
+        message: `Failed to add ${graffiti.name ?? "graffiti"}.`,
+        tone: "error",
+      });
+    }
+  };
+
   const libraryEntries = useMemo(() => {
     const term = librarySearch.trim().toLowerCase();
     const matchesSearch = (text: string) =>
@@ -1767,6 +1880,14 @@ const App = () => {
       return matchesSearch(`${sticker.name} ${sticker.sticker_index}`);
     });
 
+    const graffitiEntries = graffitiItems.filter((graffiti) => {
+      if (!(showAll || libraryTab === "graffiti")) return false;
+      if (!matchesPopularity(graffiti.name ?? "", graffiti.rarity?.name))
+        return false;
+      if (!matchesRarity(graffiti.rarity?.name)) return false;
+      return matchesSearch(`${graffiti.name ?? ""} ${graffiti.def_index ?? ""}`);
+    });
+
     const agentEntries = agentItems.filter((agent) => {
       if (!(showAll || libraryTab === "agents")) return false;
       if (!matchesPopularity(agent.name, agent.rarity?.name)) return false;
@@ -1808,6 +1929,7 @@ const App = () => {
       vanillaKnifeEntries,
       skinEntries,
       stickerEntries,
+      graffitiEntries,
       agentEntries,
       caseEntries,
       keyEntries,
@@ -1823,6 +1945,7 @@ const App = () => {
     libraryWeapon,
     librarySkins,
     stickerItems,
+    graffitiItems,
     baseWeapons,
     crateItems,
     keyItems,
@@ -1835,6 +1958,7 @@ const App = () => {
     vanillaKnifeEntries,
     skinEntries,
     stickerEntries,
+    graffitiEntries,
     agentEntries,
     caseEntries,
     keyEntries,
@@ -1985,17 +2109,20 @@ const App = () => {
                       const isCtEquipped = equippedKeys.includes("2");
                       const isTEquipped = equippedKeys.includes("3");
                       const musicKit = getMusicKitForItem(item);
+                      const graffiti = getGraffitiForItem(item);
                       const collectible =
                         collectiblesByDefIndex.get(item.def_index) ?? null;
                       const rarityName =
                         match?.rarity?.name ??
                         agent?.rarity?.name ??
+                        graffiti?.rarity?.name ??
                         musicKit?.rarity?.name ??
                         collectible?.rarity?.name ??
                         undefined;
                       const rarityColor = getRarityColor(
                         match?.rarity ??
                           agent?.rarity ??
+                          graffiti?.rarity ??
                           musicKit?.rarity ??
                           collectible?.rarity ??
                           (rarityName ? { name: rarityName } : undefined),
@@ -2006,12 +2133,18 @@ const App = () => {
                         match,
                         agent,
                         sticker,
+                        graffiti,
                         musicKit,
                         collectible,
                       );
                       const image = getPreviewImage(
                         item,
-                        match ?? agent ?? sticker ?? musicKit ?? collectible,
+                        match ??
+                          agent ??
+                          sticker ??
+                          graffiti ??
+                          musicKit ??
+                          collectible,
                         baseWeaponIndex,
                         crateIndex,
                         keyIndex,
@@ -2464,6 +2597,63 @@ const App = () => {
                         <span className="item-tile__meta">
                           {sticker.rarity?.name || "Sticker"}
                         </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {graffitiEntries.map((graffiti) => {
+                  const selectionKey = `graffiti:${graffiti.id}`;
+                  const isSelected = Boolean(librarySelection[selectionKey]);
+                  const handleSelect = () =>
+                    toggleLibrarySelection(selectionKey, {
+                      kind: "graffiti",
+                      item: graffiti,
+                    });
+                  return (
+                    <div
+                      key={graffiti.id}
+                      className={`library-card item-tile ${isSelected ? "is-selected" : ""}`}
+                    >
+                      <button
+                        className="library-card__add"
+                        type="button"
+                        onClick={() =>
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addGraffitiFromLibrary(graffiti)
+                        }
+                      >
+                        +
+                      </button>
+                      <div
+                        className="library-card__thumb item-tile__bg is-clickable"
+                        onClick={() =>
+                          libraryMultiSelect
+                            ? handleSelect()
+                            : addGraffitiFromLibrary(graffiti)
+                        }
+                      >
+                        <CachedImage
+                          src={graffiti.image}
+                          alt={graffiti.name ?? "Graffiti"}
+                          className="item-tile__image"
+                        />
+                      </div>
+                      <div
+                        className="rarity-bar"
+                        style={{
+                          backgroundColor: getRarityColor(graffiti.rarity),
+                        }}
+                      />
+                      <div className="library-card__meta">
+                        <strong className="item-tile__name">
+                          {graffiti.name ?? "Graffiti"}
+                        </strong>
+                        {graffiti.def_index && (
+                          <span className="item-tile__meta">
+                            Graffiti {graffiti.def_index}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -2925,6 +3115,8 @@ const App = () => {
                           ? "Glove"
                           : isWeapon
                             ? "Weapon"
+                            : isGraffitiItem
+                              ? "Graffiti"
                             : "Item"}
                       : {defIndexLabel}
                     </p>

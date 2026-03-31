@@ -25,9 +25,14 @@ export type SkinItem = {
 export type StickerItem = {
   id: string;
   name: string;
-  sticker_index: string;
+  sticker_index?: string;
   image?: string;
   rarity?: { name?: string; color?: string };
+  // Additional fields that may exist in API
+  rarity_id?: string | number;
+  collectible_id?: string | number;
+  unique_id?: string | number;
+  [key: string]: any; // Allow any other fields from API
 };
 
 export type AgentItem = {

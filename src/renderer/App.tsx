@@ -14,7 +14,6 @@ import {
 } from "./lib/inventory";
 import agents from "./data/agents.json";
 import { urls } from "./data/urls";
-import { cs2names, cs2indexes } from "./data/cs2names";
 import { options } from "./data/options";
 import { def_index } from "./data/def_indexes";
 import {
@@ -119,50 +118,11 @@ const getSkinDisplayName = (name?: string) => {
   return name.replace(wearSuffixRegex, "").trim();
 };
 
-const isCs2SkinName = (name?: string) => {
-  if (!name) return false;
-  const normalized = normalizeSkinName(name);
-  if (normalized.includes("warhammer")) return true;
-  if (cs2names.skins.has(normalized)) return true;
-  if (name.includes("|")) {
-    const afterPipe = normalizeSkinName(name.split("|").slice(1).join("|"));
-    return cs2names.skins.has(afterPipe);
-  }
-  return false;
-};
-
-// XD just filter kukri out for "cs2 mode"
 const isKukriSkinName = (name?: string) =>
   name ? normalizeSkinName(name).includes("kukri knife") : false;
 
 const isKukriWeaponName = (name?: string) =>
   name ? normalizeSkinName(name).includes("kukri knife") : false;
-
-const isCs2CaseName = (name?: string) =>
-  name ? cs2names.cases.has(name.toLowerCase()) : false;
-
-const cs2KeyNames = new Set(
-  ["Fever Case Key", "Gallery Case Key", "Kilowatt Case Key"].map((name) =>
-    name.toLowerCase(),
-  ),
-);
-
-const isCs2KeyName = (name?: string) =>
-  name ? cs2KeyNames.has(name.toLowerCase()) : false;
-
-const isCs2MusicKitName = (name?: string) =>
-  name ? name.toLowerCase().includes("counter-strike 2") : false;
-
-const isPostCsgoYearName = (name?: string) =>
-  name ? /(2024|2025)/i.test(name) : false;
-
-const isCs2Collectible = (item: CollectibleItem) => {
-  const name = item.name ?? "";
-  if (/(2024|2025|2026)/i.test(name)) return true;
-  if (item.def_index && cs2indexes.collectibleDefIndexes.has(item.def_index))
-    return true;
-  return false;
-};
 
 const rarityNameToId = new Map(
   options.rarity.map((option) => [option.name.toLowerCase(), option.id]),
@@ -177,6 +137,8 @@ const DEFAULT_QUALITY_ID = "0";
 const DEFAULT_RARITY_ID = "0";
 const KNIFE_GLOVE_QUALITY_ID = "3";
 const KNIFE_GLOVE_RARITY_ID = "6";
+const STICKER_QUALITY_ID = "4";
+const STICKER_RARITY_ID = "4";
 
 const applyKnifeGloveDefaults = (item: InventoryItem, defIndex: string) => {
   if (knifeDefIndexSet.has(defIndex)) {
@@ -292,13 +254,7 @@ const getWearColor = (value: number) => {
   return "#e16767";
 };
 
-const getLiveImageSrc = (src: string | undefined, nonce: number) => {
-  if (!src) return undefined;
-  const joiner = src.includes("?") ? "&" : "?";
-  return `${src}${joiner}t=${nonce}`;
-};
-
-const useInView = (options?: IntersectionObserverInit) => {
+const useInView = () => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
 
@@ -306,19 +262,18 @@ const useInView = (options?: IntersectionObserverInit) => {
     const element = ref.current;
     if (!element) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect(); // stop observing once in view
-        }
-      });
-    }, options);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setInView(entry.isIntersecting);
+        });
+      },
+      { rootMargin: "300px" },
+    );
 
     observer.observe(element);
-
     return () => observer.disconnect();
-  }, [options]);
+  }, []);
 
   return { ref, inView };
 };
@@ -336,14 +291,50 @@ export const CachedImage = ({
   className,
   fallback,
 }: CachedImageProps) => {
-  const { ref, inView } = useInView({ rootMargin: "200px" });
+  const { ref, inView } = useInView();
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  if (!src) return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
+  const handleLoad = () => {
+    setLoaded(true);
+    setError(false);
+  };
+
+  const handleError = () => {
+    setError(true);
+    setLoaded(false);
+  };
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    // Reset state when src changes to allow re-loading
+    if (src && !loaded && !error) {
+      img.src = src;
+    }
+  }, [src, loaded, error]);
+
+  if (!src)
+    return <span ref={ref}>{fallback ?? <span>No preview</span>}</span>;
 
   return (
     <span ref={ref}>
       {inView ? (
-        <img src={src} alt={alt} className={className} loading="lazy" />
+        <>
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt}
+            className={className}
+            onLoad={handleLoad}
+            onError={handleError}
+            style={{ display: loaded && !error ? "block" : "none" }}
+          />
+          {!loaded && !error && (fallback ?? <span>Loading...</span>)}
+          {error && (fallback ?? <span>Failed to load</span>)}
+        </>
       ) : (
         (fallback ?? <span>Loading...</span>)
       )}
@@ -396,7 +387,6 @@ const getPreviewImage = (
   baseIndex: Map<string, ApiItem>,
   crateIndex: Map<string, ApiItem>,
   keyIndex: Map<string, ApiItem>,
-  stickerIndex: Map<string, StickerItem>,
   skinMatch?: SkinItem | null,
   agent?: AgentItem | null,
 ) => {
@@ -410,9 +400,6 @@ const getPreviewImage = (
 
   const keyItem = keyIndex.get(item.def_index);
   if (keyItem?.image) return keyItem.image;
-
-  const stickerItem = keyIndex.get(item.def_index);
-  if (stickerItem?.image) return stickerItem.image;
 
   if (preview?.image) return preview.image;
 
@@ -499,7 +486,7 @@ const App = () => {
   const [inventoryEquipped, setInventoryEquipped] =
     useState<InventoryEquippedFilter>("all");
   const [activePage, setActivePage] = useState<
-    "inventory" | "library" | "credits"
+    "inventory" | "library"
   >("inventory");
   const [libraryTab, setLibraryTab] = useState<LibraryType>("vanilla");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "popular">("all");
@@ -507,7 +494,6 @@ const App = () => {
   const [libraryRarity, setLibraryRarity] = useState("Any");
   const [libraryQuality, setLibraryQuality] = useState("Any");
   const [libraryWeapon, setLibraryWeapon] = useState("Any");
-  const [cs2Mode, setCs2Mode] = useState(false);
   const [libraryMultiSelect, setLibraryMultiSelect] = useState(false);
   const [librarySelection, setLibrarySelection] = useState<
     Record<string, LibrarySelectionEntry>
@@ -519,7 +505,6 @@ const App = () => {
   const [wearPickerOpen, setWearPickerOpen] = useState(false);
   const [wearPickerOptions, setWearPickerOptions] = useState<SkinItem[]>([]);
   const [wearPickerSkin, setWearPickerSkin] = useState<SkinItem | null>(null);
-  const [inventoryImageNonce, setInventoryImageNonce] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -527,9 +512,6 @@ const App = () => {
   } | null>(null);
   const [attributesOpen, setAttributesOpen] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
-  const [credits, setCredits] = useState<Contributor[]>([]);
-  const [creditsLoading, setCreditsLoading] = useState(false);
-  const [creditsError, setCreditsError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -572,7 +554,18 @@ const App = () => {
           }
         }),
 
-      Promise.resolve(),
+      fetch(urls.stickers)
+        .then((response) => response.json())
+        .then((data) => {
+          if (!mounted) return;
+          setStickerItems(data as StickerItem[]);
+          setStickersLoaded(true);
+        })
+        .catch(() => {
+          if (mounted) {
+            setStatus("Failed to load sticker list.");
+          }
+        }),
     ];
 
     Promise.allSettled(loaders).finally(() => {
@@ -652,22 +645,7 @@ const App = () => {
       );
     }
 
-    if (!stickersLoaded) {
-      loaders.push(
-        fetch(urls.stickers)
-          .then((response) => response.json())
-          .then((data) => {
-            if (!mounted) return;
-            setStickerItems(data as StickerItem[]);
-            setStickersLoaded(true);
-          })
-          .catch(() => {
-            if (mounted) {
-              setStatus("Failed to load sticker list.");
-            }
-          }),
-      );
-    }
+    // Stickers are now loaded eagerly in the initial useEffect, not lazily
 
     if (!collectiblesLoaded) {
       loaders.push(
@@ -727,49 +705,6 @@ const App = () => {
     }
   }, [libraryMultiSelect]);
 
-  useEffect(() => {
-    if (activePage !== "credits") return;
-    let mounted = true;
-    setCreditsLoading(true);
-    setCreditsError(null);
-    fetch(urls.contributors)
-      .then((response) => response.json())
-      .then((data) => {
-        if (!mounted) return;
-        if (!Array.isArray(data)) {
-          setCreditsError("Failed to load contributors.");
-          setCredits([]);
-          return;
-        }
-        const mapped = data
-          .map((entry) => ({
-            login: entry.login,
-            avatar_url: entry.avatar_url,
-            html_url: entry.html_url,
-            contributions: entry.contributions ?? 0,
-          }))
-          .filter((entry) => Boolean(entry.login && entry.avatar_url));
-        const main = mapped.find(
-          (entry) => entry.login.toLowerCase() === "dricotec",
-        );
-        const others = mapped.filter(
-          (entry) => entry.login.toLowerCase() !== "dricotec",
-        );
-        setCredits(main ? [main, ...others] : others);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setCreditsError("Failed to load contributors.");
-        setCredits([]);
-      })
-      .finally(() => {
-        if (mounted) setCreditsLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [activePage]);
-
   const agentsIndex = useMemo(() => {
     const map = new Map<string, AgentItem>();
     agentItems.forEach((agent) => {
@@ -808,9 +743,10 @@ const App = () => {
 
   const stickerIndex = useMemo(() => {
     const map = new Map<string, StickerItem>();
-    stickerItems.forEach((item) => {
-      if (!item.def_index) return;
-      map.set(String(item.def_index), item);
+    stickerItems.forEach((sticker) => {
+      const key = sticker.sticker_index || sticker.id;
+      if (!key) return;
+      map.set(String(key), sticker);
     });
     return map;
   }, [stickerItems]);
@@ -864,10 +800,43 @@ const App = () => {
 
   const stickersByIndex = useMemo(() => {
     const map = new Map<string, StickerItem>();
+    const numericIdMap = new Map<string, any>();
+    
     stickerItems.forEach((sticker: any) => {
-      if (!sticker.sticker_index) return;
-      map.set(String(sticker.sticker_index), sticker);
+      // Try to find numeric ID in the raw sticker object
+      let numericId: string | null = null;
+      
+      // Check for common numeric ID field names (will be revealed by console log)
+      for (const field of ['id', 'sticker_index', 'rarity', 'unique_id', 'skin_id', 'collectible_id']) {
+        const val = sticker[field];
+        if (val !== null && val !== undefined) {
+          const numStr = String(val);
+          // If it's a number-like string, use it
+          if (/^\d+$/.test(numStr)) {
+            numericId = numStr;
+            break;
+          }
+        }
+      }
+      
+      // Try to extract numeric part from sticker-XXXX format
+      if (!numericId && sticker.id && typeof sticker.id === 'string') {
+        const match = sticker.id.match(/^sticker-(\d+)$/);
+        if (match) {
+          numericId = match[1];
+        }
+      }
+      
+      // Store by multiple keys
+      const stringKey = sticker.id;
+      if (stringKey) map.set(String(stringKey), sticker);
+      if (numericId) {
+        map.set(numericId, sticker);
+        numericIdMap.set(numericId, sticker.id);
+      }
     });
+    
+
     return map;
   }, [stickerItems]);
 
@@ -933,7 +902,8 @@ const App = () => {
   const defIndexLabel = defIndexLabels.get(selectedDefIndex);
 
   useEffect(() => {
-    setInventoryImageNonce((value) => value + 1);
+    // Items changed, images may need updating
+    // Component will refetch if needed via src changes
   }, [items]);
 
   const filteredItems = useMemo(() => {
@@ -1033,7 +1003,8 @@ const App = () => {
       reader.onload = (e) => {
         try {
           const content = e.target.result;
-          const parsed = parseInventory(content);
+          const parsed = parseInventory(content as string);
+
           setInventoryDoc(parsed);
           setFilePath(file.name);
           setSelectedId(parsed.items[0]?.id ?? null);
@@ -1195,9 +1166,13 @@ const App = () => {
       } else if (entry.kind === "sticker") {
         newItem = getDefaultItem(String(nextId++));
         newItem.def_index = STICKER_DEF_INDEX;
-        newItem.attributes["113"] = entry.item.sticker_index;
-        newItem.rarity = entry.item.rarity;
-        newItem.quality = DEFAULT_QUALITY_ID;
+        const stickerIndex = (entry.item.sticker_index || entry.item.id || "").trim();
+        if (!stickerIndex) {
+          console.warn(`Sticker "${entry.item.name}" has no sticker_index or id`);
+        }
+        newItem.attributes["113"] = stickerIndex || "0";
+        newItem.rarity = STICKER_RARITY_ID;
+        newItem.quality = STICKER_QUALITY_ID;
       } else if (entry.kind === "agent") {
         newItem = getDefaultItem(String(nextId++));
         newItem.def_index = entry.item.def_index;
@@ -1313,6 +1288,9 @@ const App = () => {
     (isStickerItem ? (stickerInfo ?? null) : null) ??
     selectedMusicKit ??
     selectedCollectible;
+  
+
+  
   const previewImage = selectedItem
     ? getPreviewImage(
         selectedItem,
@@ -1320,12 +1298,10 @@ const App = () => {
         baseWeaponIndex,
         crateIndex,
         keyIndex,
-        stickerIndex,
         skinMatchWithImage,
         selectedAgent,
       )
     : "";
-  const livePreviewImage = getLiveImageSrc(previewImage, inventoryImageNonce);
 
   const previewRarityName =
     preview && "rarity" in preview
@@ -1510,9 +1486,13 @@ const App = () => {
     );
     const newItem = getDefaultItem(nextId);
     newItem.def_index = STICKER_DEF_INDEX;
-    newItem.attributes["113"] = sticker.sticker_index;
-    newItem.rarity = DEFAULT_RARITY_ID;
-    newItem.quality = DEFAULT_QUALITY_ID;
+    const stickerIndex = (sticker.sticker_index || sticker.id || "").trim();
+    if (!stickerIndex) {
+      console.warn(`Sticker "${sticker.name}" has no sticker_index or id`);
+    }
+    newItem.attributes["113"] = stickerIndex || "0";
+    newItem.rarity = STICKER_RARITY_ID;
+    newItem.quality = STICKER_QUALITY_ID;
     setInventoryDoc({
       ...inventoryDoc,
       items: [...items, newItem],
@@ -1638,20 +1618,19 @@ const App = () => {
     const showAll = libraryTab === "all";
     const vanillaEntries = baseWeapons.filter((weapon) => {
       if (!(showAll || libraryTab === "vanilla")) return false;
-      if (!cs2Mode && isKukriWeaponName(weapon.name)) return false;
+      if (isKukriWeaponName(weapon.name)) return false;
       return matchesSearch(`${weapon.name ?? ""} ${weapon.def_index ?? ""}`);
     });
     const vanillaKnifeEntries = baseWeapons.filter((weapon) => {
       if (!(showAll || libraryTab === "knives")) return false;
-      if (!cs2Mode && isKukriWeaponName(weapon.name)) return false;
+      if (isKukriWeaponName(weapon.name)) return false;
       const defIndex = weapon.def_index ? String(weapon.def_index) : "";
       if (!knifeDefIndexSet.has(defIndex)) return false;
       if (defIndex === "42" || defIndex === "59") return false;
       return matchesSearch(`${weapon.name ?? ""} ${weapon.def_index ?? ""}`);
     });
     const skinEntries = librarySkins.filter((skin) => {
-      if (!cs2Mode && isCs2SkinName(skin.name)) return false;
-      if (!cs2Mode && isKukriSkinName(skin.name)) return false;
+      if (isKukriSkinName(skin.name)) return false;
       if (
         !(
           showAll ||
@@ -1682,6 +1661,8 @@ const App = () => {
 
     const stickerEntries = stickerItems.filter((sticker) => {
       if (!(showAll || libraryTab === "stickers")) return false;
+      if (!matchesPopularity(sticker.name, sticker.rarity?.name)) return false;
+      if (!matchesRarity(sticker.rarity?.name)) return false;
       return matchesSearch(`${sticker.name} ${sticker.sticker_index}`);
     });
 
@@ -1693,22 +1674,17 @@ const App = () => {
     });
 
     const caseEntries = crateItems.filter((crate) => {
-      if (!cs2Mode && isCs2CaseName(crate.name)) return false;
-      if (!cs2Mode && isPostCsgoYearName(crate.name)) return false;
       if (!(showAll || libraryTab === "cases")) return false;
       return matchesSearch(`${crate.name ?? ""} ${crate.def_index ?? ""}`);
     });
 
     const keyEntries = keyItems.filter((key) => {
-      if (!cs2Mode && isCs2KeyName(key.name)) return false;
-      if (!cs2Mode && isPostCsgoYearName(key.name)) return false;
       if (!(showAll || libraryTab === "keys")) return false;
       return matchesSearch(`${key.name ?? ""} ${key.def_index ?? ""}`);
     });
 
     const musicKitEntries = musicKitItems.filter((kit) => {
       if (!(showAll || libraryTab === "music")) return false;
-      if (!cs2Mode && isCs2MusicKitName(kit.name)) return false;
       if (!matchesPopularity(kit.name ?? "", kit.rarity?.name)) return false;
       if (!matchesRarity(kit.rarity?.name)) return false;
       if (!matchesMusicKitQuality(kit)) return false;
@@ -1718,7 +1694,6 @@ const App = () => {
     const collectibleEntries = collectibleItems.filter((collectible) => {
       if (!(showAll || libraryTab === "collectibles")) return false;
       if (isPremierCollectible(collectible)) return false;
-      if (!cs2Mode && isCs2Collectible(collectible)) return false;
       if (!matchesPopularity(collectible.name ?? "", collectible.rarity?.name))
         return false;
       if (!matchesRarity(collectible.rarity?.name)) return false;
@@ -1745,7 +1720,6 @@ const App = () => {
     libraryRarity,
     libraryQuality,
     libraryWeapon,
-    cs2Mode,
     librarySkins,
     stickerItems,
     baseWeapons,
@@ -1771,28 +1745,24 @@ const App = () => {
 
   return (
     <div className="app">
-      <div className="app__body">
-        <aside className="sidebar">
-          <div className="sidebar__title">Menu</div>
+      <div className="app__header">
+        <div className="tabs">
           <button
-            className={`sidebar__link ${activePage === "inventory" ? "is-active" : ""}`}
+            className={`tab-button ${activePage === "inventory" ? "is-active" : ""}`}
             onClick={() => setActivePage("inventory")}
           >
             Inventory
           </button>
           <button
-            className={`sidebar__link ${activePage === "library" ? "is-active" : ""}`}
+            className={`tab-button ${activePage === "library" ? "is-active" : ""}`}
             onClick={() => setActivePage("library")}
           >
             Library
           </button>
-          <button
-            className={`sidebar__link ${activePage === "credits" ? "is-active" : ""}`}
-            onClick={() => setActivePage("credits")}
-          >
-            Credits
-          </button>
-        </aside>
+        </div>
+      </div>
+
+      <div className="app__body">
 
         <main
           className={`app__main mainmenu-content__container mainmenu-content__container--inventory ${
@@ -1948,17 +1918,12 @@ const App = () => {
                       );
                       const image = getPreviewImage(
                         item,
-                        match ?? agent ?? musicKit ?? collectible,
+                        match ?? agent ?? sticker ?? musicKit ?? collectible,
                         baseWeaponIndex,
                         crateIndex,
                         keyIndex,
-                        stickerIndex,
                         match,
                         agent,
-                      );
-                      const liveImage = getLiveImageSrc(
-                        image,
-                        inventoryImageNonce,
                       );
                       return (
                         <button
@@ -1979,7 +1944,7 @@ const App = () => {
                         >
                           <div className="library-card__thumb item-tile__bg">
                             <CachedImage
-                              src={liveImage}
+                              src={image}
                               alt={name}
                               className="item-tile__image"
                             />
@@ -2065,19 +2030,7 @@ const App = () => {
                     onChange={(event) => setLibrarySearch(event.target.value)}
                   />
                 </div>
-                <div className="library-mode">
-                  <label className="checkbox">
-                    <input
-                      type="checkbox"
-                      checked={cs2Mode}
-                      onChange={(event) => setCs2Mode(event.target.checked)}
-                    />
-                    CS2 Mode
-                  </label>
-                  <span className="hint">
-                    CS2 items are hidden in CSGO mode.
-                  </span>
-                </div>
+
                 <div className="library-bulk">
                   <label className="checkbox">
                     <input
@@ -2394,13 +2347,18 @@ const App = () => {
                           className="item-tile__image"
                         />
                       </div>
-                      <div className="rarity-bar" />
+                      <div
+                        className="rarity-bar"
+                        style={{
+                          backgroundColor: getRarityColor(sticker.rarity),
+                        }}
+                      />
                       <div className="library-card__meta">
                         <strong className="item-tile__name">
                           {sticker.name}
                         </strong>
                         <span className="item-tile__meta">
-                          Sticker {sticker.sticker_index}
+                          {sticker.rarity?.name || "Sticker"}
                         </span>
                       </div>
                     </div>
@@ -2688,80 +2646,6 @@ const App = () => {
               </div>
             </section>
           )}
-          {activePage === "credits" && (
-            <section className="panel panel--credits transition-all duration-200 inv-category Active">
-              <div className="panel__header content-navbar">
-                <h2>Credits</h2>
-                <span className="hint">Open-source contributors</span>
-              </div>
-              <div className="credits-panel">
-                {creditsLoading && (
-                  <div className="hint">Loading contributors…</div>
-                )}
-                {creditsError && <div className="hint">{creditsError}</div>}
-                {!creditsLoading && !creditsError && credits.length === 0 && (
-                  <div className="hint">No contributors found.</div>
-                )}
-                {!creditsLoading && credits.length > 0 && (
-                  <>
-                    {credits[0]?.login?.toLowerCase() === "dricotec" && (
-                      <div className="credits-section">
-                        <div className="credits-section__title">
-                          Main Developer
-                        </div>
-                        <div className="credits-grid">
-                          {credits
-                            .filter(
-                              (entry) =>
-                                entry.login.toLowerCase() === "dricotec",
-                            )
-                            .map((entry) => (
-                              <a
-                                key={entry.login}
-                                className="credits-card"
-                                href={entry.html_url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <img src={entry.avatar_url} alt={entry.login} />
-                                <div>
-                                  <strong>{entry.login}</strong>
-                                  <span>Main Developer</span>
-                                </div>
-                              </a>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="credits-section">
-                      <div className="credits-section__title">Contributors</div>
-                      <div className="credits-grid">
-                        {credits
-                          .filter(
-                            (entry) => entry.login.toLowerCase() !== "dricotec",
-                          )
-                          .map((entry) => (
-                            <a
-                              key={entry.login}
-                              className="credits-card"
-                              href={entry.html_url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <img src={entry.avatar_url} alt={entry.login} />
-                              <div>
-                                <strong>{entry.login}</strong>
-                                <span>{entry.contributions} contributions</span>
-                              </div>
-                            </a>
-                          ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
-          )}
         </main>
       </div>
 
@@ -2863,7 +2747,7 @@ const App = () => {
             <div className="details-preview">
               <div className="details-preview__thumb">
                 <CachedImage
-                  src={livePreviewImage}
+                  src={previewImage}
                   alt={displayName || "Preview"}
                   fallback={
                     <div className="preview-placeholder">
@@ -2910,7 +2794,7 @@ const App = () => {
               <div className="details-preview">
                 <div className="details-preview__thumb">
                   <CachedImage
-                    src={livePreviewImage}
+                    src={previewImage}
                     alt={displayName || "Preview"}
                     fallback={
                       <div className="preview-placeholder">

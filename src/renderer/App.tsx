@@ -2122,16 +2122,6 @@ const App = () => {
                     <button className="btn btn--save" onClick={handleSave}>
                       Save
                     </button>
-                    <button className="btn btn--add" onClick={handleAdd}>
-                      Add
-                    </button>
-                    <button
-                      className="btn btn--remove"
-                      onClick={handleRemove}
-                      disabled={!selectedItem}
-                    >
-                      Remove
-                    </button>
                   </div>
                   <div className="inventory-toolbar">
                     <div className="inv-search-navbar">
@@ -2206,7 +2196,8 @@ const App = () => {
                       </label>
                     </div>
                   </div>
-                  <div className="inventory-grid">
+                  <div className="inventory-container">
+                    <div className="inventory-grid">
                     {filteredItems.map((item) => {
                       const agent = agentsIndex.get(item.def_index) ?? null;
                       const wear = getWearValue(item.attributes["8"]);
@@ -2364,7 +2355,16 @@ const App = () => {
                         </button>
                       );
                     })}
+                    </div>
                   </div>
+                  <button
+                    className="btn btn--remove inventory-remove-btn"
+                    onClick={handleRemove}
+                    disabled={!selectedItem}
+                    title="Select an item and click to remove"
+                  >
+                    REMOVE
+                  </button>
             </section>
           )}
 

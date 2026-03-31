@@ -1,68 +1,120 @@
 # csgo_gc_inventory-editor
 
-**csgo_gc_inventory-editor** is a graphical inventory editor for [Mikko’s `csgo_gc`](https://github.com/mikkokko/csgo_gc).
+`csgo_gc_inventory-editor` is a graphical editor for the `inventory.txt` file used by [Mikko's `csgo_gc`](https://github.com/mikkokko/csgo_gc).
 
----
-# If you find this project useful, please consider giving it a ⭐ to support its development
+It provides a fast, visual workflow for loading, browsing, editing, and saving inventories without hand-editing KeyValues files.
 
 ## Overview
 
-This project provides a lightweight graphical interface for editing the `inventory.txt` file used by `csgo_gc`.
+The app is built around two primary workflows:
 
-It allows users to manage their inventory without manually editing text files, making the process faster, more intuitive, and less error-prone.
-
----
+1. `Inventory`: inspect existing items, filter them, edit attributes, and save changes back to `inventory.txt`.
+2. `Library`: browse a built-in item database and add skins, knives, gloves, stickers, agents, cases, keys, music kits, and collectibles to your inventory.
 
 ## Features
 
-* Graphical interface for editing `inventory.txt`
-* Add, modify, and remove inventory items
-* Manage your inventory visually
-* Integrated CS2 icon previews
-* Lightweight and efficient
+- Load and save `inventory.txt` files.
+- Preserve inventory container structure when parsing and serializing documents.
+- Browse inventory items with live search and category filters.
+- Filter inventory by rarity, quality, and equipped state.
+- Browse a built-in library of vanilla items, skins, gloves, stickers, agents, cases, keys, music kits, and collectibles.
+- Use library multi-select to add several items in one pass.
+- Edit item attributes such as `def_index`, quality, rarity, paint index, pattern template, wear, and StatTrak fields.
+- Preview item images, applied stickers, rarity accents, and equipped CT/T state.
+- Use a wear slider for skin items with readable wear labels.
+- Receive footer feedback for add/save/load flows.
 
----
+## Screenshots
 
-## Screenshots (new)
+### Inventory tab
 
-<img width="1919" height="1037" alt="image" src="https://github.com/user-attachments/assets/4e828bde-5b48-4f3b-a5d3-1be15d2b0a25" />
+![Inventory tab overview](src/img/screenshot-20260331-194903.png)
 
-<img width="354" height="418" alt="image" src="https://github.com/user-attachments/assets/32001dd0-576e-4ec4-8ce0-8fe8b8099e70" />
+### Library tab
 
-<img width="970" height="800" alt="image" src="https://github.com/user-attachments/assets/b595846a-42de-4fcf-9bb9-06c63edc5b6e" />
+![Library tab overview](src/img/screenshot-20260331-194931.png)
 
-<img width="1921" height="1039" alt="image" src="https://github.com/user-attachments/assets/aa0362e1-dae1-45c7-a36d-6a6cdca6500d" />
+### Sticker library view
 
-<img width="961" height="367" alt="image" src="https://github.com/user-attachments/assets/29197bfb-6cfe-413f-b04b-7cf4d81acb09" />
+![Sticker library view](src/img/screenshot-20260331-194945.png)
 
+### Attribute editor modal
 
-## Screenshots (old)
+![Attribute editor modal](src/img/screenshot-20260331-195017.png)
 
-<img width="1921" height="1038" alt="image" src="https://github.com/user-attachments/assets/df13335b-a6d3-4506-915e-c6a213b9b9f0" />
+## Getting Started
 
-<img width="1924" height="1040" alt="image" src="https://github.com/user-attachments/assets/1604f468-8edc-4aea-a633-37fe5ae509e7" />
+### Requirements
 
-<img width="1926" height="1035" alt="image" src="https://github.com/user-attachments/assets/7ebf6145-c686-4f49-b823-262cfc0ad788" />
+- Node.js 18 or newer
+- npm
 
-<img width="1924" height="1037" alt="image" src="https://github.com/user-attachments/assets/054e9953-721f-4b40-991c-20294691535c" />
+### Installation
 
----
+```bash
+npm install
+```
 
-## Credits
+### Development
 
-CS2 icon previews are provided by:
-[https://github.com/ByMykel/CSGO-API/](https://github.com/ByMykel/CSGO-API/)
+```bash
+npm run dev
+```
 
----
+### Production build
+
+```bash
+npm run build
+```
+
+### Preview the production build
+
+```bash
+npm run preview
+```
+
+## Usage
+
+1. Start the app.
+2. Open the `Inventory` tab and use `Load` to import an existing `inventory.txt`, or begin with a fresh document.
+3. Select an item to inspect and edit its fields.
+4. Open the `Library` tab to browse available items and add them to the inventory.
+5. Use category chips, search, and dropdown filters to narrow down results.
+6. Save the result back to `inventory.txt` with `Save`.
+
+## Project Structure
+
+```text
+src/
+	img/                 Local screenshots used in the README
+	renderer/
+		App.tsx            Main application UI and workflows
+		styles.css         Global styling and theme
+		data/              Item datasets and option lists
+		lib/               Inventory parsing and serialization helpers
+```
+
+## Data and Credits
+
+- CS item preview data and icon references are based on the CS item datasets bundled with the project.
+- CS2 icon previews are provided by [ByMykel/CSGO-API](https://github.com/ByMykel/CSGO-API/).
+
+## License
+
+This project is licensed under the CPULL License.
+
+Important restriction: personal and non-commercial use only. See [LICENSE.md](LICENSE.md) for the full terms.
 
 ## Contributing
 
 Contributions are welcome.
 
-To contribute:
+1. Fork the repository.
+2. Create a branch for your change.
+3. Keep changes focused and clearly described.
+4. Open a pull request for review.
+5. Contributors are credited in the app.
 
-1. Fork the repository
-2. Create a new branch for your changes
-3. Commit your changes with clear messages
-4. Open a pull request for review
-5. You will show up in the Credits tab on the Inventory Editor for contributing.
+## Support
+
+If the project is useful to you, consider starring the repository.
